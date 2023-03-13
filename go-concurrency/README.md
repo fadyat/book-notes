@@ -8,4 +8,4 @@ Katherine Cox-Buday.
 ## Table of Contents
 
 - [An introduction to Concurrency](concurrency-intro/concurrency-introduction.md)
-- [Modeling your code: Communicating sequential processes](concurrency-intro/modeling-your-code.md)
+- [Modeling your code: Communicating sequential processes](modeling-your-code/modeling-your-code.md)
