@@ -167,3 +167,46 @@ abbreviating it.
 to reduce disk seeks.
 
 ### Comparing B-Trees and LSM-Trees
+
+LSM-Trees are typically faster for writes, whereas B-Trees are typically faster
+for reads. 
+
+LSM-Trees are slow for reads, because the have to check several data structures 
+and SSTables at different stages of compaction.
+
+#### Advantages of LSM-Trees
+
+A B-tree index must write every piece of data at least twice.
+Log-structured index also rewrite data multiple times.
+
+**Write amplification** is an effect when one writing operation to the database
+affect miltiple writes to the disk.
+
+In write-heavy apps, the performance bottleneck is often the disk.
+
+Moreover, LSM-Trees are typically able to sustain higher write rates than
+B-Trees, because they have lower write amplification and compaction of SSTables
+is faster than B-Tree rebalancing.
+
+LSM-Trees can be compressed better and produce smaller files on disk, because
+B-Tree save some memory for fragmentation.
+
+#### Downsides of LSM-Trees
+
+Compaction process sometimes can interfere with reads and writes and slow them
+down.
+
+With compaction arises a high write throughput: the more data you write, the
+more compaction you have to do.
+
+If write throughput is not configured carefilly, it can happen that compaction
+can't keep up with the rate of incoming requests.
+
+An advantage of B-Trees is that each key exists in exacly one place in the index.
+This aspect make B-Trees more attractive in databases that want to offer strong 
+transaction semantics. 
+
+B-Trees are very ingrained in the architecture of databases.
+In new datastores log-structured indexes are becoming more popular.
+
+### Other Indexing Structures
