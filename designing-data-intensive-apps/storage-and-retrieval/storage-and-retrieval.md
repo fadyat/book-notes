@@ -110,3 +110,60 @@ incrementally and use less disk space.
 
 ### B-Trees
 
+The most widely used indexing structure in databases is the **B-Tree**.
+
+Like SSTable, B-Trees keep key-value pairs sorted by key.
+
+B-Trees break the database down into fixed-size __blocks__ or __pages__ (
+usually 4K or 8K) and read and write one page at a time.
+
+Each page can be identified using an address or location, which allows one
+page to refer to another -- simular as a pointer, but on disk instead of
+memory. 
+
+Starts with a **root page**. The page contains several keys and references
+to a child pages. Each child is responsible for a continious range of keys.
+
+**Leaf pages** are the pages that contain the actual key-value pairs.
+
+**Branching factor** is the number of children that each page can have.
+
+If you want to change the value of existing key, you have to find the leaf
+page that contains the key and update the value there.
+
+If you want to insert a new key, you have to find the leaf page that contains
+the key and insert the new key there. If the leaf page is full, you have to
+split it into two pages and insert the new key into one of them.
+
+Depth of the tree is O(log N) and tree remains balanced.
+
+#### Making B-Trees reliable
+
+Overwrite doesn't change the location of the page.
+
+Some operations require multiple pages to be overwritten. 
+Split of the page need change in the parent page and so on.
+This is a dangerous operation, because if the database crashes after only some
+pages were written you end up with a **corrupted index**.
+
+In order to make the database resilent to crashes, it's common for B-tree impl
+to have a **write-head-log** (WAL). This is an append-only file to which every 
+modification must be written before it is applied to the pages itself.
+If the database crashes, the WAL can be replayed to restore the database to
+a consistent state.
+
+Latches (lightweight locks) are used to prevent multiple threads from 
+modifying the same page at the same time.
+
+#### B-Tree optimizaitons
+
+- Instead of overwriting pages and maintaining a WAL, some DB like LMDB
+use a copy-on-write scheme. Modified pages are copied to a new location
+instead of being overwritten.
+- We save space in pages not storing the entire key, but
+abbreviating it.
+- Sequantial order of leaf pages on disk to make it faster.
+- B-Tree variants as a **fractal-trees** borrow sime log-strucutured ideas
+to reduce disk seeks.
+
+### Comparing B-Trees and LSM-Trees
