@@ -276,5 +276,64 @@ that can be written to disk.
 memory to disk when there is not enough memory, and loading back to memory 
 when it's accessed again in the future.
 
-### Transaction Processin or Analytics
+### Transaction Processing or Analytics
+
+**Transaction** - group of reads and writes that form a logical unit.
+
+**OLTP (online transaction processing)** is type of data processing that consists
+of executing a number of transactions occurring concurrently.
+
+**OLAP (online analytic processing)** is software for performing analysis at
+high speed on large volumes of data.
+
+| Property | OLTP | OLAP |
+| ---      | ---  | ---  |
+| Main read pattern | Small numbers of records per query | Aggregate over large numbers of records |
+| Main write pattern | Random-access, low-latency writes from user-input | Bulk import or event stream |
+| Primary used for | End user/customer via web app | Internal analyst, for decision support |
+| What data represents | Latest state of data | History of events that happend over time |
+| Dataset size | GBytes - TBytes | TBytes - PBytes |
+
+At first time databases where used for both processses. 
+
+There was a trend for companies to stop using their OLTP systems for analytics 
+purposes and run it on separate database -- **data warehouse**.
+
+#### Data Warehousing
+
+A **data warehouse** is a separate database that analysts can query to their 
+hearts content, without affecting OLTP operations. (contains a read-only copy 
+of data from OLTP)
+
+OLTP data extracted by cron or using continious stream of updates, transformed
+into an analysis-friendly schema, cleaned up, and then loaded to the DWH.
+This process of getting data data into DWH is known as **Extract-Transform-Load (ETL)**.
+
+OLAP can be optimized directly for analytics. For example, she don't need indexes.
+
+**The divergence between OLTP databases and data warehouses**
+
+- The data model of DWH is most commonly relational, SQL is good for it.
+- There are many graphical data analysis tools that generate SQL queries, 
+visualize the results and allow to explore the data (__drill-down__, __slicing__, 
+__dicing__).
+
+Both a focused on supporting either transaction processing or analytics 
+workflow, but not both.
+
+**Stars and Snowflakes: Schemas for Analytics**
+
+**Star schema (dimentional modeling)** because when the table relationship are 
+visualized, the fact table is in the middle and others are connected to her.
+
+**Fact table** - represents an event that occured at a particular time.
+**Dimension table** - table which are referenced via foreign key. (represents the 
+__who__, __what__, __when__, __how__ and __why__ of the event)
+
+A variation of this template is known as the **snowflake** schema, where dimensions
+are further broken down into subdimesions.
+
+In typical DWH tables are often very wide.
+
+### Column-Oriented Storage
 
