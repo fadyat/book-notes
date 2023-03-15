@@ -210,3 +210,71 @@ B-Trees are very ingrained in the architecture of databases.
 In new datastores log-structured indexes are becoming more popular.
 
 ### Other Indexing Structures
+
+**Primary index** uniquely identifies one row or one document or one vertex.
+Other records can refer to it.
+
+Secondary index is not unique, and they often crucial for performing joins
+efficiently. 
+
+#### Storing values within the index
+
+**Heap file** is a place were rows are stored in no particular order.
+The heap file is common because it avoids duplicating data when multiple 
+secondary indexes are present: each index just references a location in a 
+heap file.
+
+**Clustered index** is an index that stores the actual data in the same 
+place as the index itself.
+
+> For example in MySQL, the primary key is clustered by default.
+
+Compromessive between clustered index(stroring all row data with the index) and 
+nonclustered index (storing only refrerences to the data with the index) is 
+known as **covering index** or **index with included columns**, which 
+stores __some__ of the row data with the index. This allows to run some queries
+only using the index.
+
+As with any kind of duplication of data, clustered and covering index can speed
+up reads, but the require additional storage and can be overhead on writes.
+
+#### Multi-column Indexes
+
+**Concatenated index** combines several fields into one key by appending one 
+column to another.
+
+> This index is useless if you want to search by one of the columns.
+
+**Multi-dementional index** is a more general way of querying several
+columns at once.
+
+#### Full-text search and fuzzy indexes
+
+All previous indexes don't allow you to search for __simular__ keys, such as 
+misspelled words. Such __fuzzy__ querying requires different techniques.
+
+Full-text engines commanly allow a search for one word to be expand to include 
+synonyms and ignore grammatical variations.
+
+Levenshtein automation and other techs that goes with ML document classification.
+
+#### Keeping everything in memory
+
+Advantages of disks:
+- they are durable 
+- lower cost per GByte
+
+If RAM become cheaper and your dataset are simply not big - **in-memory database**.
+
+- Big performance improvements, no disk overhead needed.
+- Can avoid the overheads of encoding in-memory data structures in a form 
+that can be written to disk.
+- Providing data models that a difficult to implement with disk-based indexes.
+(Redis offers a database-like interface for priorty queue and sets).
+
+**Anti-caching** approach works by evicting the least recent used data from 
+memory to disk when there is not enough memory, and loading back to memory 
+when it's accessed again in the future.
+
+### Transaction Processin or Analytics
+
