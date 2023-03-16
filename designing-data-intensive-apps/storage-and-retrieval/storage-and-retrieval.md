@@ -337,3 +337,105 @@ In typical DWH tables are often very wide.
 
 ### Column-Oriented Storage
 
+If you have a PBytes of data, storing and querying them efficiently becomes
+a challenging problem.
+
+In most OLTP DB storage is laid out in __row-oriented__ fashion.
+
+The idea behind __column-oriented__ storage is simple: don't store all the values 
+from one row together, but store all the values from each *column* together instead. 
+
+> Now when you run SQL query only needs to read and parse selected column.
+
+#### Column Compression
+
+**Bitmap encoding** - count 0 and 1 in bitmap of number. (29 = 9, 1; omitting rest zeros)
+
+Query IN, AND, OR are easly done with bitwise operators.
+
+**Column families** - within each column family they store all columns 
+from a row together. 
+
+**Memory bandwidth and vectorized processing**
+
+- For DWH queries that need to scan a over millions of rows, a big bottleneck 
+is the bandwidth for getting data from disk into memory. 
+- Also developers worry about CPU usage.
+
+Query engine takes chunk of compressed data -> fits in the CPU L1 cache -> iterate through 
+it in w/o system calls. CPU do it much faster than code. Thit technique is known 
+as **vectorized processing**.
+
+#### Sort Order in Column Storage 
+
+It's doesn't necesarily matter in which order the rows are stored. 
+However, we can choose to impose the order, like we did with SSTables and use 
+it as an indexing mechanism. 
+
+We can only reconstruct a row. Dev can choose the columns by which the table should be 
+sorted, 2+ sorts will be applied on rows, which have equal values in prev sorting. 
+
+Sorted order can help you with compression of columns.
+
+> If the primary column doesn't have many distinct values, then after sorting,
+it will have long sequences where the same value is repeated many time in a row. 
+A simple run-lenght encoding could compress that column down to field Kbytes.
+
+That compression effect is strongest on the first key sort, but it's still a win overall. 
+
+**Several different sort orders**
+
+Different queries benefit from different sort orders. Why not store the same data 
+sorted in several different ways? Data needs to be replicated to different machines 
+anyway.
+
+Having multiple sort orders in a column-oriented store is a bit simular to having 
+multuple secondary indexes in a row-oriented store. (but without pointers)
+
+#### Writing to Column-Oriented Storage 
+
+Compression and sorting make it harder to write.
+
+An update-in-place approach, like in B-Trees, is not possible with
+compressed column
+> If you want to insert the row in the middle of a sorted table, you would 
+most likely to rewrite all the column files.
+
+Fortunately, we have already a good solution - LSM-Trees.
+
+In-memory store -> sorted structure -> preparation for a disk -> merge with files 
+on disk -> writes new files in bulk.
+
+
+#### Aggregation: Data Cubes and Materialized Views
+
+Not every DWH is necessarily a column store.
+
+Materialized aggregates. 
+
+**Materialized view** is a cached result of some aggregates like MAX, SUM etc.
+
+In relational model it's often defined as a **standard(virtual) view**.
+
+The difference is that Materialized view is an actual copy, whereas a virtual view 
+is a shortcut for writing queries.
+
+When data changes a materialized view needs to be updated. The database can do that 
+automatically, but this makes writes more expensive. That is why such types of views 
+are not often used in OLTP databases. In read-only DWH they can make more sense. 
+
+A commmon special case of materialized view is known as a **data cube** or **OLAP cube**.
+It's a grid of aggregates grouped by different demensions.
+
+Certain quieries become very fast because they have effectively been precomputed.
+But data cube doesn't have the same flexibility as querying the raw data. 
+
+### Summary 
+
+How databases handle storage and retrieval. 
+
+OLTP, OLAP.
+
+SSTables, LSM-Trees, B-Trees, indexes.
+
+
