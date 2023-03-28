@@ -63,7 +63,6 @@
 - Persistent volume (where, size, id)
 - Persistent volume claim
 
-<<<<<<< Updated upstream
 # Cluster components
 
 - etcd
@@ -199,4 +198,62 @@ when node crushed - pod will be crushed too
 
 - good for getting info about previous deployment
 
-## 
+## CronJob
+
+- by cron (schedule)
+- be careful with parameters
+- `startingDeadlineSeconds`, `concurrecyPolicy`, `successfulJobsHistoryLimit`, `failedJobsHistoryLimit`
+
+## RBAC (Role based access control)
+
+- Role
+- RoleBinding
+- ClusterRole
+- ClusterRoleBinding
+- ServiceAccount
+
+
+# DNS in K8S
+
+- NodeLocal DNS Cache
+- CoreDNS
+- apps publish using `service` or `ingress`
+
+## Service types
+
+- ClusterIP (good for work inside of cluster)
+- NodePort (good when have balancer before, not http apps)
+- LoadBalancer (good for publishing, but works good only in cloud providers app)
+- ExternalName (?)
+- ExteralIPs (balancer, VIP IP address)
+- Headless (ClusterIP=None, stateful apps)
+
+## Ingress
+
+> Ingress != Service
+
+- good for publishing
+- rules to services
+
+
+## Cert-manager
+
+- auto renewal
+- ingress controller integration
+- CRD(custom resource definition)
+- RBAC
+
+# Helm
+
+- Kubectl based: sed/envsubst, ansible
+- templating, realizes
+- "package manager"
+- watch, rollback
+- plugins system
+
+## Package = Chart
+
+- templated manifests
+- values
+- metainfo
+
