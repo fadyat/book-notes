@@ -63,6 +63,7 @@
 - Persistent volume (where, size, id)
 - Persistent volume claim
 
+<<<<<<< Updated upstream
 # Cluster components
 
 - etcd
@@ -138,4 +139,64 @@ ipvs:
 - network plugins (flannel, calico): network for nodes, pods, network policies
 
 ## Ingress
+> info was before
+- not ingress controller
 
+## Fault tolerance
+
+- etcd (3+)
+- api server (by number of etcd)
+> only single instance of scheduler and controller manager are active
+>
+> if can't update LIS label will be replaced by first passive instance
+>
+> if node or api server crushed another instances can update label
+
+- scheduler (3+)
+- controller manager (3+)
+- for 1 datacenter - 1 cluster (hard), k8s federation
+- nginx for kubelet and kubeproxy to solve hardcoded ips
+
+# K8s advanced
+
+## DaemonSet 
+
+- `depoyment` w/o number of instances field, for each node - one pods
+- for cluster network configuration, monitoring
+- launching podes on each node, when adding new node - new pod will be launched,
+when node crushed - pod will be crushed too
+
+## Tolerations 
+
+- which podes can be launched on node 
+- `taint` and `toleration` for podes
+- `taint` - зараза, `toleration` - вакцина
+
+## StatefulSet
+
+- allows to run group of pods (like deployment) with saving state between restarts
+- unique name for each pod, garant sequence pf launched pods 
+- `PVC template` for each pod, don't delete pvc template
+- database, cache, queue
+
+## Affinity 
+
+- where we want to launch our pods, not labels
+- for nodes and pods, `nodeAffinity`, `podAffinity`
+- `requiredDuringSchedulingIgnoredDuringExecution`, `preferredDuringSchedulingIgnoredDuringExecution` 
+
+## Headless Service 
+
+- service without clusterIP
+- clusterIP value equal to None
+
+## Job
+
+- creates pod for some task, that must be done 
+- restarts until not complete or with timeout
+
+> TTL controller - can clean unused jobs
+
+- good for getting info about previous deployment
+
+## 
