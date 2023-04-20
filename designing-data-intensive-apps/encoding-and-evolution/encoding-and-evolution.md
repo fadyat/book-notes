@@ -188,7 +188,7 @@ as a Parquet.
 **Web services**
 
 - Service with underlying HTTP protocol for talking - web service 
-- REST is not a protocal, but rather a design philosophy that builds upon the 
+- REST is not a protocol, but rather a design philosophy that builds upon the 
 principles of HTTP.
 - An API designed according to the principles of REST is called RESTful.
 - SOAP
@@ -196,5 +196,64 @@ principles of HTTP.
 produce documentation. 
 
 **The problems with remote procedure calls (RPCs)**
+
+The RPC model tries to make a request to a remote network service look the same 
+as calling a function in your programming language, within the same process. (the 
+abstraction is called **location transparency**)
+
+- Local functions are predictable, RPCs because of network are not.
+- Local function call either succeeds or failds, RPCs have another possible 
+outcome - timeout. In that case you simply don't know what happened.
+- If you retry a failed network request, it could happen that the request are actually getting 
+through, but responses are getting lost. You will retry the same request multiple times,
+unless you build a **idempotent** into your service.
+- In local function you can effectively pass pointers to objects in local memory,
+but in RPC you have to pass the data itself.
+- The client and the service may be implemented in different programming languages,
+so the RPC framework must translate datatypes between the two languages.
+
+All of these factors means that there's no point in trying to make RPCs look like
+local function calls.
+
+REST doesn't try to hide the fact that this is a network protocol. 
+
+**Current direction of RPC**
+
+The new generation of RPC frameworks is more explicit about the fact that they are 
+network protocols. 
+
+Finagle and Rest.li use futures (promises) to encapsulate the asynchronous actions 
+that may fail. There also good for making parallel requests and compare results.
+
+gRPC supports streams, where call consists of a series of requests and responses
+over time.
+
+Some of the provide **service discovery** - a way to find the address of a service 
+from a client.
+
+RPC protocols with a binary encoding format can achieve better performance than
+RESTful APIs with a JSON encoding format.
+
+But REST API is better for experimentation and debugging.
+
+RPC often used for internal communication between services, while REST is used for 
+external communication with clients.
+
+** Data encoding and evolution for RPC**
+
+For evolvability is important that RPC clients and servers can be changed 
+and deployed independently. 
+
+We only need a backward compatibility on requests (previous clients can talk to
+new servers), and a forward compatibility on responses (new server response 
+will be readable by old clients).
+
+Service compatibility makes harder when your service is used by other services 
+that are not under your control (for example in your company).
+
+For REST API you can just use version numbers in the URL.
+
+#### Message-Passing Dataflow 
+
 
 
