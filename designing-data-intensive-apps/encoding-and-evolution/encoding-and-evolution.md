@@ -255,5 +255,56 @@ For REST API you can just use version numbers in the URL.
 
 #### Message-Passing Dataflow 
 
+Message broker.
 
+Using message broker has several advantages compared to direct RPC:
+
+- It can act as a buffer if the recipient is unavailable or overloaded.
+
+- It can automtically redelive mesasges to a process that has crushed, and thus 
+prevent messages from being lost.
+
+- It avoids the sender needing to know the address of the recipient.
+
+- One message can be send to multiple recipients.
+
+- It logically decouples the sender and the recipient (they don't know about each 
+other).
+
+This communication pattern is **asynchronous**: the sender doesn't wait for the 
+message to be delivered, but simply sends and forgets.
+
+**Message brokers**
+
+In general they works like this:
+
+- One process sends a mesasge to a named queue (or topic).
+- Broker ensures that the message is delivered to one or more consumers (or subscribers).
+- There can be many producers and many consumers on the same topic. 
+
+Topic provides only one-way dataflow. It's easly to solve, just create another topic.
+
+Message brokers typically don't enforce any particular schema on the messages (it's
+just a sequences of bytes with some metadata).
+
+If the selected encoding is backward and forward compatible, you have the greatest 
+flexibility to change publishers and consumers independently and deploy them 
+in any order.
+
+**Distributed actor frameworks**
+
+**Actor model** is a programming model for concurrency in a single process. Rather 
+than dealing directly with threads, logic is encapsulated in actors. 
+
+Each actor typically represents one client or entity, it may have some local state (which is
+not shared with other actors), and it communicates with other actors by sending and receiving
+messages (like a queue on each actor).
+
+Messages delivery is not guaranteed, each actor processed directly one message at a time.
+
+In distributed actor frameworks, this model is used to scale an application 
+across multiple different nodes. The message-passing mechanism is used, no matter 
+whether the sender and the recipient are. 
+
+Popular frameworks: [ Akka, Orleans, Erlang OTP ].
 
