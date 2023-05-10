@@ -9,3 +9,6 @@ book [Designing Data-Intensive Applications](https://dataintensive.net/).
 - [Chapter 2. Data Models and Query Languages](data-models-and-query-languages/data-models-and-query-languages.md)
 - [Chapter 3. Storage and Retrieval](storage-and-retrieval/storage-and-retrieval.md)
 - [Chapter 4. Encoding and Evolution](encoding-and-evolution/encoding-and-evolution.md)
+- [Chapter 5. Replication](replication/replication.md)
+
+
