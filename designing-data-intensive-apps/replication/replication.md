@@ -63,4 +63,56 @@ it has caught up with the leader and is ready.
 
 ### Handling Node Outages
 
+How to achieve high availability with leader-based replication?
+
+#### Follower failure: Catch-up recovery
+
+- each follower keeps a log of the data changes it has received from the leader 
+
+#### Leader failure: Failover
+
+Such process is trickier, called **failover**.
+
+One of the followers needs to be prometed to be the new leader, and
+all others need to start consuming data changes from new leader. 
+
+Can happen manually or automatically.
+
+Things that can go wrong:
+
+- If async replication is used, new leader may not received all the writes 
+from the old leader. What happed if the old leader comes back online?
+> The most common solution is for old leader to discard its own writes since it 
+> became a follower, which may violate the client durability.
+
+- Discarding writes is especially dangerous if the other systems outside of the database 
+need to be coordinated with the db content. (e.g cache based on db index)
+
+- **Split brain** - two nodes both thinking they are the leader and both accepting writes.
+> Mechanism for detecting and down one of the nodes.
+
+- Which timeout to use for detecting leader failure?
+> If timeout is too short, we may get false positives and failover when the leader is
+> still available. If timeout is too long, failover may take a long time.
+
+### Implementation of Replication Logs
+
+#### Statement based replication
+
+In the simplest case, the leader logs every write request that executes and sends that log to all of its followers.
+(update, insert, delete).
+
+Break down cases:
+
+- nondeterministic functions (e.g `random()`, `now()`) - different results on different nodes 
+> leader can replace the function call with the returned value, but it is not always possible.
+
+- if have autoincrement, or update of existing data - need to be replicated in the same order.
+- side effect statements (trigger, stored procedures, user-defined functions).
+
+#### Write-ahead log (WAL) shipping
+
+
+
+
 
