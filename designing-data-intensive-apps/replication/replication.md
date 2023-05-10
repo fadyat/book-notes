@@ -112,7 +112,41 @@ Break down cases:
 
 #### Write-ahead log (WAL) shipping
 
+Every write is appended to the log on disk before the write is applied to the database.
+> The log is an append-only sequence of bytes, so it is easy to replicate.
 
+- Main disadvantage: log describes data on very low level, WAL contains details of which bytes were changed in which disk block.
+> If the database is upgraded her storage format, it's typically 
+> isn't possible to run different versions on the leader and the follower.
 
+#### Logical (row-based) log replication 
+
+An alternative is to use diff log formats for replication and for the storage 
+engine, which allows the replication log to be decoupled from the storage engine internals.
+
+- The replication log is a sequence of logical records, each of which describes a
+write operation that was executed on a row in a table.
+
+- For an inserted row, new values of all columns
+- For a deleted row, some identification of the row (e.g primary key)
+- For an updated row, identification of the row and new values of columns 
+
+A transaction that affects multiple rows generate several log records followed by a record 
+indicating commit. 
+
+- Easier to be kept a backward compatible, different versions on leader and follower.
+- Easier to parse for external systems, (e.g dwh, cache), called **change data capture** (CDC).
+
+#### Trigger-based replication 
+
+In previous cases all replication is done by the db itself and what if
+we want only some of the data to be replicated?
+
+**Trigger** - a piece of code that is executed when a data change occurs in a db.
+
+It have an opportunity yo log this change into separate table, from which can 
+be read by external process. (e.g Oracle GoldenGate)
+
+### Problems with Replication Lag
 
 
