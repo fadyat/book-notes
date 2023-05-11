@@ -149,4 +149,61 @@ be read by external process. (e.g Oracle GoldenGate)
 
 ### Problems with Replication Lag
 
+**Evantual consistency** - the guarantee that if no new updates are made
+to the data, eventually all reads will return the same result.
+
+**Replication lag** - the amount of time by which a replica is behind the leader.
+
+3 problems that are likely to occur when there is replication lag.
+
+#### Reading Your Own Writes
+
+When user write data record goes through the leader, but when he reads it 
+may goes through the follower.
+
+We need **read-after-write consistency** - guarantee that if the user reloads the page,
+he will see any themselves submitted updates. 
+
+Possible techniques:
+
+- When reading smth that the user may modify - read from leader. 
+- Using of others criteria to deside read from leader or not. 
+(e.g last update time for 1 minute, replication lag value)
+- Remember the timestamp of the most recent write on client. 
+- If replicas distributes across multiple dc, any request that needs to be served 
+by the leader must be routed to that dc.
+
+**Cross-device read-after-write consistency** - guarantee that if the user writes data on one device,
+the data will be immediately visible when accessing the service from another device.
+
+Some additional issues:
+
+- Metadata with last update of the client needs to be centralized (shared between 
+all devices of the user).
+- No guarantee of routing to the same dc.
+
+#### Monotonic Reads 
+
+Possible to see **moving backward in time** when reading from the async follower.
+This may happen if user makes reads from different replicas. 
+
+**Monotonic reads** - guarantee that this kind of anomaly doesn't happen.
+> One way of achieving this is to always read from the same replica for 
+a particular user (e.g by hash of user_id).
+
+#### Consistent Prefix Reads 
+
+**Consistent prefix reads** - guarantee that if a sequence of writes happens 
+in the certain order, then anyone reading those writes will see them appear 
+in the same order.
+> One solution is to make sure that any writes that are causally related 
+to each other are written to the same partition - but in some apps that can't 
+be done efficiently. 
+
+#### Solutions for Replication Lag 
+
+Transactions are too expensive in distributed world?
+
+### Multi-Leader Replication
+
 
