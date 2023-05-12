@@ -259,3 +259,50 @@ Perfect case: very small units of change and non-locking.
 
 #### Handling Write Conflicts
 
+This is the biggest problem with multi-leader replication, conflict resolution 
+is required. 
+
+##### Synchronous Versus Asynchronous Conflict Detection
+
+In single leader database the second write will block and wait until the first 
+write is committed or aborted.
+
+It's late to detect conflict when both writes are successfully committed.
+
+Conflict detection is syncronous - wait for the write to be replicated to all replicas 
+before telling the user that the write was successful. By doing this 
+we may lose the main advantage of multi-leader replication - independent writes. 
+
+##### Conflict Avoidance
+
+Just avoid the conflict by design. :)
+
+All writes to a particular record are sent to the same leader.
+> Failure, relocation cases are possible.
+
+##### Converging toward a consistent state 
+
+There is no defined ordering of writes, so it's not clear what the final value should be.
+> When they will share data between leaders, which value is correct?
+
+Replicas must resolve conflict in **convergent** way - all replicas must arrive 
+to a final value when all changes have been replicated.
+
+Ways of achieving convergent conflict resolution:
+
+- Each write have a unique ID (e.g UUID) and the replica with the highest ID wins.
+(if timestamps are used it's called **last write wins** - LWW)
+> Dataloss is possible
+- Each replica have a unique ID and let writes that originated at a highest numbered 
+replica win.
+> Dataloss is possible 
+- Merge the values together 
+- Record the conflict in explicit data structure the preserves all info, 
+write application code that resolver the conflict later.
+
+##### Custom conflict resolution logic 
+
+On write/read conflict resolution logic can be implemented in application code.
+
+Conflict resolution usually applies to a document/row, not for entire transaction.
+
