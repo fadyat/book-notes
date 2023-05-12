@@ -206,4 +206,56 @@ Transactions are too expensive in distributed world?
 
 ### Multi-Leader Replication
 
+Leader based replication model allows accept writes only on one node. 
+
+#### Use Cases for Multi-Leader Replication 
+
+##### Multi-datacenter operation
+
+You can have a leader on each datacenter.
+> Within dc regular leader-follower replication is used. 
+> Between dc, each dc leader replicates its changes to the others leaders.
+
+Advantages:
+
+- Performance 
+> Each write happens on the local dc, instead of dc with single leader.
+
+- Tolerance of datacenter outages 
+> In failure cases each dc can continue to operate independently, instead of
+making follower from another dc as a leader. 
+
+- Tolerance of network problems 
+> Traffic between dc usually goes over the public internet, which is less 
+reliable than the local network.
+
+External tools for multi-leader replication:
+- BDR (Bi-Directional Replication) for PostgreSQL
+- Tungsten Replicator for MySQL
+- GoldenGate for Oracle
+
+Multi-leader replication must be done with care. (e.g conflict resolution,
+autoincrementing keys on each dc)
+
+##### Clients with offine operation 
+
+Each device have a local database that acts as a leader and then 
+asyncronous share data with followers. In that case each device can 
+continue to operate independently when offline. 
+
+Each device is a "datacenter".
+
+##### Collaborative editing
+
+Real-time collaborative editing of a document by multiple users.
+
+When one user edit a document, the changes are apply to his local replica 
+and async replicated to the server and other users who are edititing the same document. 
+
+App must obtain a lock on the document before a user can edit it, if you want to 
+guarantee that there will be no conflicts.
+
+Perfect case: very small units of change and non-locking.
+
+#### Handling Write Conflicts
 
