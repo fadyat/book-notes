@@ -306,3 +306,54 @@ On write/read conflict resolution logic can be implemented in application code.
 
 Conflict resolution usually applies to a document/row, not for entire transaction.
 
+#### Multi-Leader Replication Topologies
+
+Describes the communication paths alogns which writes are propagated from 
+one node to another.
+
+- Circular topology 
+  ```
+  [ ] -> [ ]
+   ^      |
+   |      v
+  [ ] <- [ ]
+  ```
+
+- Star topology 
+  ```
+  [ ]    [ ]
+   \      / 
+    \    / 
+     [  ]
+    /    \
+   /      \
+  [ ]    [ ]
+  ```
+
+- All-to-all topology
+  ```
+  [ ] -- [ ]
+   | \__/ |
+   | /  \ |
+  [ ] -- [ ]
+  ```
+
+> To prevent an infinite loop each node have a unique ID, in replication log 
+also. 
+
+The problem in circular and star topology it's if the node is down,
+the replication can't continue. (must have custom resolution logic)
+
+All-to-all topology also have problems - some network links may be faster 
+than the others.
+> As a result some messages overtake anothers. (e.g update of the value, that 
+not exists on current node yet, but exists on another leader node)
+
+This is problem is simular to consistent prefix reads. 
+> We need sure that all nodes process inserts first. 
+> Simply attaching a timestamp to each message is not enough.
+> To order this events correctly a technique called **vector clocks** is used.
+
+### Leaderless Replication 
+
+
