@@ -354,6 +354,43 @@ This is problem is simular to consistent prefix reads.
 > Simply attaching a timestamp to each message is not enough.
 > To order this events correctly a technique called **vector clocks** is used.
 
-### Leaderless Replication 
+### Leaderless Replication
 
+Dynamo-style databases use leaderless replication.
+(e.g Cassandra, Riak, Voldemort)
+
+#### Writing to the Database When a Node Is Down 
+
+Client do writes to all replicas -> One of the replicas is down ->
+Client ignores the error and continue to write to the other replicas -> 
+Replica that was down comes back online -> Data on that replica is now stale (outdated).
+
+> To solve this problem client make a read from multiple replicas (as in a write case) 
+and compare the versions of values, if they different. 
+
+##### Read repair and anti-entropy
+
+How does catch up the stale data?
+
+Two popular mechanisms used in Dynamo-style databases:
+
+- Read repair 
+> When a client reads from replica it can detect any stale responses.
+
+- Anti-entropy process 
+> Periodically compare data on all replicas and copies any missing values from one replica to another.
+Order of writes is not important, may be a significant delay before data is copied. 
+
+Not all systems implement both mechanisms.
+
+##### Quorums for reading and writing 
+
+As long as `w + r > n` we expect to get an up-to-date value when reading.
+`w` - number of nodes to write to,
+`r` - number of nodes to read from,
+`n` - total number of replicas
+
+> If `w + r > n` then at least one node that is both in the write set and the read set.
+
+#### Limitations of Quorum Consistency 
 
