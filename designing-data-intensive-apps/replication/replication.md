@@ -394,3 +394,36 @@ As long as `w + r > n` we expect to get an up-to-date value when reading.
 
 #### Limitations of Quorum Consistency 
 
+`w` and `r` it's not necessary need to be majority of nodes.
+> They require just single overlap.
+
+You may also set `w + r <= n`.
+> In this case, reads and writes are still be sent to `n` nodes, but a 
+smaller number of successful responses is required to consider the operation succeed. 
+
+With a smaller values you more likely to read stale values, on the other 
+side it allows lower latency and higher availability.
+
+However, even with `w + r > n` you can still have edge cases with stale values:
+
+- If a **sloppy quorum** is used, the `w` writes may end up on different nodes that `r` reads. 
+
+- If two writes occur concurrently - conflicts, and the conflict resolution.
+
+- If a write happend concurrently with a read, some replicas may have the new value. 
+
+- If some writes failed, successful writes are not rolled back. (quorum value will be lower)
+
+- Even if everything is working correctly, there are edge cases in which 
+you can get unlucky timing. 
+
+Returning of latest write it's not simple. 
+
+##### Monitoring staleness
+
+In leader-based replication is possible to monitor a replication lag, 
+because all writes go through the leader and in the same order. 
+
+#### Sloppy Quorums and Hinted Handoff
+
+
