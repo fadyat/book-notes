@@ -426,4 +426,122 @@ because all writes go through the leader and in the same order.
 
 #### Sloppy Quorums and Hinted Handoff
 
+Leaderless database is a really good system that provide high availability 
+and low latency. 
+
+Is it better to return errors to all requests which we can't reach a quorun of nodes?
+Or should we accept writes anyway, and write them to some reachable nodes?
+
+**Sloppy quorum** writes and reads still require `w` and `r` successful responses, 
+but those may include nodes that are not among the designated `n` nodes. 
+> Like you lock yourself out of your house and knocking on the neighbors door.
+
+Once the network interruption is resolved, any writes that one node temporarily 
+accepted on behalf of another node are sent to the appropriate "home" nodes -- 
+**hinted handoff**.
+> Once you find the keys to your house again you neighbor politely ask you to leave. 
+
+Sloppy nodes are particularly used for increasing write availability. 
+
+##### Multi-datacenter operation 
+
+Leaderless replication is also suitable for multi-datacenter operation, since it is designed to tolerate conflicting concurrent writes, network interruptions, and latency spikes.
+
+Each write from a client is sent to all replicas, regardless of datacenter, but the client 
+is usually only waits fro acknoledgment from a quorum of nodes in local dc.
+
+#### Detecting Concurrent Writes 
+
+If each node simply overwrite the value for a key whenever it received a write request, 
+the nodes become permanently inconsistent. 
+
+##### Last write wins (discarding concurrent writes)
+
+One approach for achieving eventual convergence is declare that each replica need store 
+only the most recent value and allow older values to be overwritten and discarded. 
+
+> But what means "most recent value"? What if requests happend concurrently?
+
+Even through the writes don't have a natural order, we can force an arbitrary 
+order for them. (e.g attach timestamp to each write)
+
+> This approach is called **last write wins** (LWW).
+>
+> LWW achieves the durability, but at the cost of durability. (only one write from 
+> concurrent clients will survive). Moreover LWW may drop writes that are not concurrent.
+>
+> Caching cases in which lost writes are perhaps acceptable.
+
+If losing of data isn't acceptable LWW is a poor choice for conflict resolution.
+
+There only safe way of using DB with LWW is to encure that a key is only written once 
+and thereafter treated as immutable.
+
+##### The "happens-before" relationship and concurrency
+
+**Causally dependent** - if one event happened before another event.
+
+An operation A happens before B if B knows about A, or depends, or build on it.
+
+> Concurrent means that neither of operations knows about the other.
+
+If A > B, or B > A -> not concurrent operations. Otherwise concurrent.
+
+We need a algorithm that can detect concurrent writes and resolve them.
+
+##### Capturing the happens-before relationship
+
+- The server maintains a version number for each key, increment the version number 
+every time it was written, and stores the new version along with the value.
+
+- When a client reads a key, the server returns all values that have not been 
+over‐written, as well as the latest version number. 
+A client must read a key before writing.
+
+- When a client writes a key, it must include the version number from the 
+prior read, and it must merge together all values that it received in 
+the prior read.
+
+- When the server receives a write with a particular version number, it
+can over‐write all values with that version number or below 
+(since it knows that they have been merged into the new value), but it must 
+keep all values with a higher version number (because those values 
+are concurrent with the incoming write).
+
+When a write includes the version number from a prior read, that tells us which pre‐ vious state the write is based on. If you make a write without including a version number, it is concurrent with all other writes, so it will not overwrite anything—it will just be returned as one of the values on subsequent reads.
+
+##### Merging concurrently written values
+
+If several operations happend concurrently, clients have to clean up afterward by merging 
+the concurrently written values - **sublings**.
+
+> Merging sibling values is essentially the same problem as conflict resolution in multileader replication 
+
+We can't simply remove from database; the system must leave a marker with appropriate 
+version number to indicate that the value was deleted -- **tombstone**.
+
+##### Version vectors 
+
+Instead, we need to use a version number per replica as well as per key. Each replica increments its own version number when processing a write, and also keeps track of the version numbers it has seen from each of the other replicas. This information indicates which values to overwrite and which values to keep as siblings.
+
+The collection of version numbers from all the replicas is called a **version vector**.
+
+### Summary 
+
+Replication purposes:
+- High availability
+- Scalability
+- Disconnect operation 
+- Latency 
+
+Replication models:
+- Single-leader 
+- Multi-leader 
+- Leaderless 
+
+Replication lag, sync / async replication. 
+
+Read-after-write consistency, monotonic reads, consistent prefix reads, conflict resolution.
+
+
 
