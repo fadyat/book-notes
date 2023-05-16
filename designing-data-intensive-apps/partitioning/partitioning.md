@@ -69,3 +69,49 @@ However, having split of the writes accross different keys, any reads now have t
 do additional work - read the data from all keys and merge them.
 
 ### Partitioning and Secondary Indexes
+
+The situation becomes more complex when we want to use secondary indexes. He doesn't 
+identify the record, but speed up the search.
+
+The problem with secondary indexes that they don't map neatly to partitions.
+
+#### Partitioning Secondary Indexes by Document 
+
+If you declared the index the database can perform the indexing automatically. 
+Each partition has its own secondary index, and it can be updated independently.
+For that reason it's called **local index**.
+
+Reading from a document-partitioned index requires care.
+> For example red car appears in both partitions, so we need to send query to both partitions and combine results.
+
+This approach to quering a partitioned database is sometimes called **scatter/gather**, and it can make read 
+queries on secondary indexes quity expensive. Even if you make requests in parallel. 
+
+Most database vendors recommend that your structure your partitioning scheme so that secondary 
+index queries can be served from a single partition, but it not always possible,
+especially when you're using multiple secondary indexes in a single query. 
+
+
+#### Partitioning Secondary Indexes by Term 
+
+Rather than each partition having its own secondary index, we can 
+construct a **global index** that covers all partitions. 
+
+We can't store it in one place, it also needs to be partitioned :) differently from 
+primary index.
+
+We can call this kind of index **term-partitioned**, because the term we're looking 
+fro determines th partition of the index. 
+
+Advantage over document-partitioned index is that we can make read more efficient.
+But writes are slower and complicated, because now we affect multiple partitions of the index. 
+
+However term-partitioned indexes requires a distributed transaction, which is not
+available in many databases.
+
+In practice, updates of secondary indexes are often implemented asynchronously, 
+may not be immediately consistent with the primary index.
+
+### Rebalancing Partitions 
+
+
