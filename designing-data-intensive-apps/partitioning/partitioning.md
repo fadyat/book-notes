@@ -195,4 +195,39 @@ If it is not done carefully, this process can overload the network or the nodes 
 
 For that reason, it can be a good thing to have a human in the loop for rebalancing. It’s slower than a fully automatic process, but it can help prevent operational surprises.
 
+#### Request Routing 
+
+**Service discovery** is an instance that answers on question: on which IP address and port number 
+I need to connect to if I want to read/write the key X?
+> Not limited to databases, but also used in microservices.
+
+On high level are a few approaches:
+
+- allow clients to contact any node (e.g via round-robin balancer)
+> accepts request or redirect it to another node an return the result to the client 
+
+- send all requests to a routing tier first, which determines the node that should handle the request 
+> acts like a partition-aware load balancer 
+
+- require that clients be aware of the partitioning and the assignment to nodes.
+> connect directly to the appropriate node 
+
+In all cases, the key problem is: how does the component making the routing decision (which may be one of the nodes, or the routing tier, or the client) learn about changes in the assignment of partitions to nodes?
+
+Many distributed data systems rely on a separate coordination service such as Zoo‐ Keeper to keep track of this cluster metadata
+
+Each node registers itself in ZooKeeper, and ZooKeeper maintains the authoritative mapping of partitions to nodes. 
+
+Other actors, such as the routing tier or the partitioning-aware client, can subscribe to this information in ZooKeeper. Whenever a partition changes ownership, or a node is added or removed, ZooKeeper notifies the routing tier so that it can keep its routing information up to date.
+
+Cassandra and Riak take a different approach: they use a gossip protocol among the nodes to disseminate any changes in cluster state. Requests can be sent to any node, and that node forwards them to the appropriate node for the requested partition.
+
+When using a routing tier or when sending requests to a random node, clients still need to find the IP addresses to connect to. These are not as fast-changing as the assignment of partitions to nodes, so it is often sufficient to use DNS for this purpose.
+
+#### Summary 
+
+We explored different ways of partitioning a large dataset into smaller subsets. Partitioning is necessary when you have so much data that storing and pro‐ cessing it on a single machine is no longer feasible.
+The goal of partitioning is to spread the data and query load evenly across multiple machines, avoiding hot spots.
+
+
 
