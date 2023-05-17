@@ -114,4 +114,85 @@ may not be immediately consistent with the primary index.
 
 ### Rebalancing Partitions 
 
+Over time, things change in a database:
+
+- the query throughput increase -> want to add more cpu to handle it 
+- the dataset increase -> want to add more disk and RAM to store it 
+- a machine fail -> others need to take over its work 
+
+All of these changes call for data and requests to be moved from one node to another. 
+The process of moving load from one node to another is called **rebalancing**.
+
+No matter which scheme is used, rebalancing is usually expected to meet some min requirements:
+
+- after rebalancing, the load should be shared fairly between the nodes of the cluster 
+- while rebalancing is happening, the database should continue accepting reads and writes 
+- no more data than necessary should be moved between nodes, to make it fast and minimize network and disk i/o load. 
+
+#### Strategies for Rebalancing 
+
+There are a few different strategies for rebalancing data between nodes:
+
+##### How not to do it: hash mod N
+
+We routing each record to partiontion by making a ranges of hashes:
+> e.g 0..10, 10..20 etc. 
+
+Not by mod, because if we add a new node we need to move all previous data to a new 
+range.
+> e.g was n % 10, 11 -> 1; now n % 11, 11 -> 0 (need to be moved)
+
+We need an approach that doesn’t move data around more than necessary.
+
+##### Fixed number of partitions 
+
+Fortunately, there is a fairly simple solution: create many more partitions than there are nodes, and assign several partitions to each node. For example, a database run‐ ning on a cluster of 10 nodes may be split into 1,000 partitions from the outset so that approximately 100 partitions are assigned to each node.
+
+Now, if a node is added to the cluster, the new node can steal a few partitions from every existing node until partitions are fairly distributed once again.
+
+Only entire partitions are moved between nodes. The number of partitions does not change, nor does the assignment of keys to partitions. The only thing that changes is the assignment of partitions to nodes. 
+
+In principle, you can even account for mismatched hardware in your cluster: by assigning more partitions to nodes that are more powerful, you can force those nodes to take a greater share of the load.
+
+Choosing the right number of partitions is difficult if the total size of the dataset is highly variable
+
+The best performance is achieved when the size of partitions is “just right,” neither too big nor too small, which can be hard to achieve if the number of partitions is fixed but the dataset size varies.
+
+##### Dynamic partitioning 
+
+When a partition grows to exceed a configured size (on HBase it’s 10GB by default)
+it splits into two partitions of equal size.
+
+After a large partition have been split it also can be moved to another node to balance the load. 
+
+An advantage of dynamic partitioning is that the number of partitions adapts to the total data volume.
+
+##### Partitioning proportionally to nodes
+
+With dynamic partitioning, the number of partitions is proportional to the size of the dataset, since the splitting and merging processes keep the size of each partition between some fixed minimum and maximum.
+
+On the other hand, with a fixed number of partitions, the size of each partition is proportional to the size of the dataset.
+
+In both of these cases, the number of partitions is independent from the number of nodes.
+
+A third option, used by Cassandra and Ketama, is to make the number of partitions proportional to the number of nodes—in other words, to have a fixed number of partitons per node.
+
+In this case, the size of each partition grows proportion‐ ally to the dataset size while the number of nodes remains unchanged, but when you increase the number of nodes, the partitions become smaller again.
+
+When a new node joins the cluster, it randomly chooses a fixed number of existing partitions to split, and then takes ownership of one half of each of those split parti‐ tions while leaving the other half of each partition in place.
+
+#### Operations: Automatic or Manual Rebalancing 
+
+For example, Couchbase, Riak generate a suggested partition assignment automatically, 
+but require an administrator to approve the change before it is applied.
+
+Fully automated rebalancing can be convienient, because there is the less operational 
+work to do for formal maintenance, but it can be unpredictable. 
+
+Rebalancing is an expensive operation, because it requires rerouting requests and moving a large amount of data from one node to another.
+
+If it is not done carefully, this process can overload the network or the nodes and harm the performance of other requests while the rebalancing is in progress.
+
+For that reason, it can be a good thing to have a human in the loop for rebalancing. It’s slower than a fully automatic process, but it can help prevent operational surprises.
+
 
