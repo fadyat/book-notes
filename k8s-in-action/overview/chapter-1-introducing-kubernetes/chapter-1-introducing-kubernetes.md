@@ -23,7 +23,23 @@
 
 ### 1.1.2 Providing a consistent environment to applications
 
-- 
+It's better to have the same team that develops the application also take part 
+in deploying and taking care of it over its whole lifecycle.
 
+This means the developer, QA and operations team now need to colaborate thorought the whole process 
+- DevOps.
 
+We want to make releases more often and give a developers the ability to make it fast and simple without
+the need of the operations team.
+
+With k8s we allows to sysadmin to focus on keeping underlying infrastructure up and running,
+while not having to worry about the applications running on top of it.
+
+> All do they own job, but they do it together and in a coordinated way.
+
+## 1.2 Introducing container technologies 
+
+K8S uses Linux container technologies to provide isolution of running applications.
+
+### 1.2.1 Understanding what containers are 
 
