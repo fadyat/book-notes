@@ -118,4 +118,39 @@ process (or group).
 This way, processes cannot hog resources reserved for other processes,
 which is similar to when each process runs on a separate machine.
 
+### 1.2.2 Introducing the Docker container platform 
 
+Docker was the first container system that made containers easily portable across different machines. It simplified the process of packaging up not only the application but also all its libraries and other dependencies, even the whole OS file system, into a simple, por- table package that can be used to provision the application to any other machine running Docker.
+
+When you run an application packaged with Docker, it sees the exact filesystem contents that you’ve bundled with it. It sees the same files whether it’s running on your development machine or a production machine, even if it the production server is running a completely different Linux OS.
+
+This is similar to creating a VM image by installing an operating system into a VM, installing the app inside it, and then distributing the whole VM image around and running it. Docker achieves the same effect, but instead of using VMs to achieve app isolation, it uses Linux container technologies mentioned in the previous section to provide (almost) the same level of isolation that VMs do. Instead of using big mono- lithic VM images, it uses container images, which are usually smaller.
+
+Docker-based container images are composed to layers, which can be shared and reused across multiple 
+images. Only certain layers of an image need to be downloaded if the other layers 
+are already downloaded previously.
+
+#### Understanding Docker concepts 
+
+Docker is a platform for packaging, distributing, and running applications.
+
+Docker makes it possible to transfer this package to a central repository from which it can then be transferred to any computer running Docker and executed there
+
+Main concepts:
+
+- Images
+>  container image is something you package your appli- cation and its environment into. It contains the filesystem that will be available to the application and other metadata, such as the path to the executable that should be executed when the image is run.
+
+- Registries 
+> repository that stores your Docker images and facilitates easy sharing of those images between different people and computers.
+> Allows to push (upload) and pull (download) images to and from the registry.
+> Certain registries are public, such as Docker Hub, while others are private and are usually hosted inside your organization.
+
+- Containers 
+> regular Linux container created from a Docker-based container image. A running container is a process running on the host running Docker, but it’s completely isolated from both the host and all other processes running on it. 
+
+#### Building, distributing, and running a Docker image 
+
+![](./docker-process.png)
+
+#### Comparing Virtual Machines and Docker containers 
