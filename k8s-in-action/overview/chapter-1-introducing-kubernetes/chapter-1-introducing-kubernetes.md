@@ -154,3 +154,132 @@ Main concepts:
 ![](./docker-process.png)
 
 #### Comparing Virtual Machines and Docker containers 
+
+Apps A and B have access to same binaries and libraries both when running in VM and 
+when running in separate Docker containers. Why?
+
+![](./vm-docker.png)
+
+#### Understanding image layers
+
+Different images can con- tain the exact same layers because every Docker image is built on top of another image and two different images can both use the same parent image as their base. This speeds up the distribution of images across the network, because layers that have already been transferred as part of the first image don’t need to be transferred again when transferring the other image.
+
+Also help reduce the storage footprint of images.
+
+Each layer is only stored once. Two containers created from two images based on the same base layers can therefore read the same files, but if one of them writes over those files, the other one doesn’t see those changes.
+
+When the process in the container writes to a file located in one of the underlying layers, a copy of the whole file is created in the top-most layer and the process writes to the copy.
+
+#### Understanding the portability limitations of container images 
+
+In theory, a container image can be run on any Linux machine running Docker, but one small caveat exists—one related to the fact that all containers running on a host use the host’s Linux kernel.
+
+> If a containerized application requires a specific kernel version, it may not work on every machine. If a machine runs a different version of the Linux kernel or doesn’t have the same kernel modules available, the app can’t run on it.
+> You can’t containerize an application built for the x86 architec- ture and expect it to run on an ARM-based machine because it also runs Docker.
+
+### 1.2.3 Introducing rkt - an alternative to Docker 
+
+> Archived on Github :( 
+
+The actual isolation of containers is done at the Linux kernel level using kernel features such as Linux Namespaces and cgroups. Docker only makes it easy to use those features.
+
+Like Docker, rkt is a platform for running containers. It puts a strong emphasis on security, composability, and conforming to open standards. It uses the OCI container image format and can even run regular Docker container images.
+
+Don’t make the mistake of thinking Kubernetes is a container orchestration system made specifically for Docker-based containers.
+
+## 1.3 Introducing Kubernetes 
+
+It's becomes harder to manage all containers. 
+
+### 1.3.1 Understanding its origins
+
+Through the years, Google developed an internal system called Borg (and later a new system called Omega), that helped both application developers and system administra- tors manage those thousands of applications and services.
+
+In addition to simplifying the development and management, it also helped them achieve a much higher utiliza- tion of their infrastructure, which is important when your organization is that large.
+
+When you run hundreds of thousands of machines, even tiny improvements in utiliza- tion mean savings in the millions of dollars, so the incentives for developing such a system are clear.
+
+In 2014 Google introduced Kubernetes, an open-source system based on the experience gained through Borg, Omega, and other internal Google systems.
+
+### 1.3.2 Looking at Kubernetes from the top of a mountain
+
+Kubernetes is a software system that allows you to easily deploy and manage containerized applications on top of it. It relies on the features of Linux containers to run het- erogeneous applications without having to know any internal details of these applications and without having to manually deploy these applications on each host.
+
+Because these apps run in containers, they don’t affect other apps running on the 
+same server, which is critical when you run applications for completely different organizations on the same hardware.
+
+Kubernetes enables you to run your software applications on thousands of computer nodes as if all those nodes were a single, enormous computer. It abstracts away the underlying infrastructure and, by doing so, simplifies development, deployment, and management for both development and the operations teams.
+
+#### Understanding the core of what Kubernetes does 
+
+When the developer sub- mits a list of apps to the master, Kubernetes deploys them to the cluster of worker nodes. What node a component lands on doesn’t (and shouldn’t) matter—neither to the developer nor to the system administrator.
+
+![](./k8s-nodes.png)
+
+The developer can specify that certain apps must run together and Kubernetes will deploy them on the same worker node. Others will be spread around the cluster, but they can talk to each other in the same way, regardless of where they’re deployed.
+
+#### Helping developers focus on the core app features 
+
+Kubernetes can be thought of as an operating system for the cluster. It relieves appli- cation developers from having to implement certain infrastructure-related services into their apps; instead they rely on Kubernetes to provide these services. This includes things such as service discovery, scaling, load-balancing, self-healing, and even leader 
+election. 
+
+Application developers can therefore focus on implementing the actual fea- tures of the applications and not waste time figuring out how to integrate them with the infrastructure.
+
+#### Helping ops teams achieve better resource utilization
+
+Kubernetes will run your containerized app somewhere in the cluster, provide infor- mation to its components on how to find each other, and keep all of them running. Because your application doesn’t care which node it’s running on, Kubernetes can relocate the app at any time, and by mixing and matching apps, achieve far better resource utilization than is possible with manual scheduling.
+
+### 1.3.3 Understanding the architecture of a Kubernetes cluster
+
+At the hardware level k8s cluster is composed of many nodes, which can split into two types:
+
+- master node (also called the control plane)
+> controls and manages the whole k8s system 
+
+- worker nodes 
+> runs the actual applications 
+
+![](./k8s-architecture.png)
+
+#### The control plane 
+
+The Control Plane is what controls the cluster and makes it function. It consists of multiple components that can run on a single master node or be split across multiple nodes and replicated to ensure high availability.
+
+- API server
+> which I (using the kubectl command) and others Control Plane components 
+> communicate with. 
+
+- Scheduler
+> schedules your apps (assigns a worker node to each deployable component of your app)
+
+- Controller manager
+> performing cluster level functions, such as replication, tracking of worker nodes,
+> and handling node failures.
+
+- etcd
+> distributed key-value store that stores the cluster state (configuration data)
+
+The components of the Control Plane hold and control the state of the cluster, but they don’t run your applications. This is done by the (worker) nodes.
+
+#### The nodes 
+
+The worker nodes are the machines that run your containerized applications. The task of running, monitoring, and providing services to your applications is done by the following components:
+
+- Container runtime (docker for example)
+> responsible for running containers 
+
+- kubelet
+> talks to the API server and manages containers on its node 
+
+- kube-proxy
+> responsible for load-balancing network traffic between application components
+
+### 1.3.4 Running an application in Kubernetes
+
+To run an application in Kubernetes, you first need to package it up into one or more container images, push those images to an image registry, and then post a description of your app to the Kubernetes API server.
+
+The description includes information such as the container image or images that contain your application components, how those components are related to each other, and which ones need to be run co-located (together on the same node) and which don’t. For each component, you can also specify how many copies (or replicas) you want to run. Additionally, the description also includes which of those compo- nents provide a service to either internal or external clients and should be exposed through a single IP address and made discoverable to the other components.
+
+#### Understanding how the description results in a running container 
+
+
