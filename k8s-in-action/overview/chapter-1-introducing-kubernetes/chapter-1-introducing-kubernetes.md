@@ -288,7 +288,7 @@ starts the instructs the Container runtime to pull the required image and start
 the container -> Kube-proxy on each node configures the network to allow the 
 containers to communicate with each other and with the outside world.
 
-![](./k8s-running.md)
+![](./k8s-running.png)
 
 #### Keeping the containers running 
 
