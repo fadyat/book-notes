@@ -11,4 +11,4 @@ book [Designing Data-Intensive Applications](https://dataintensive.net/).
 - [Chapter 4. Encoding and Evolution](encoding-and-evolution/encoding-and-evolution.md)
 - [Chapter 5. Replication](replication/replication.md)
 - [Chapter 6. Partitioning](partitioning/partitioning.md)
-
+- [Chater 7. Transactions](transactions/transactions.md)
