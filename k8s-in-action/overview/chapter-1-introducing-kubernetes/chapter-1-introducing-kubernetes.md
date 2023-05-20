@@ -282,4 +282,79 @@ The description includes information such as the container image or images that 
 
 #### Understanding how the description results in a running container 
 
+API server processes app description -> Scheduler schedules the specified groups of containers 
+onto available worker nodes based on computation resources -> Kubelet on each node 
+starts the instructs the Container runtime to pull the required image and start 
+the container -> Kube-proxy on each node configures the network to allow the 
+containers to communicate with each other and with the outside world.
+
+![](./k8s-running.md)
+
+#### Keeping the containers running 
+
+Kubernetes continuously monitors the state of the deployed application 
+based on the description you provided. 
+
+If a container fails, Kubernetes will restart it.
+If a node fails, Kubernetes will start the containers that were running on that node on a different node. 
+
+#### Scaling the number of copies 
+
+You can also scale the number of copies of your application components up or down.
+
+#### Hitting a moving target 
+
+To allow clients to easily find containers that provide a specific service, you can tell Kubernetes which containers provide the same service and Kubernetes will expose all of them at a single static IP address and expose that address to all applications run- ning in the cluster.
+
+The kube-proxy will make sure connec- tions to the service are load balanced across all the containers that provide the service. The IP address of the service stays constant, so clients can always connect to its con- tainers, even when they’re moved around the cluster.
+
+### 1.3.5 Understanding the benefits of using Kubernetes
+
+If you have Kubernetes deployed on all your servers, the ops team doesn’t need to deal with deploying your apps anymore. Because a containerized application already contains all it needs to run, the system administrators don’t need to install anything to deploy and run the app. On any node where Kubernetes is deployed, Kubernetes can run the app immediately without any help from the sysadmins.
+
+#### Simplifying application deployment 
+
+Because Kubernetes exposes all its worker nodes as a single deployment platform, application developers can start deploying applications on their own and don’t need to know anything about the servers that make up the cluster.
+
+#### Achieving better utilization of hardware 
+
+By setting up Kubernetes on your servers and using it to run your apps instead of run- ning them manually, you’ve decoupled your app from the infrastructure.
+
+By using containers and not tying the app down to a specific node in your cluster, you’re allowing the app to freely move around the cluster at any time, so the different app components running on the cluster can be mixed and matched to be packed tightly onto the cluster nodes. This ensures the node’s hardware resources are utilized as best as possible.
+
+The ability to move applications around the cluster at any time allows Kubernetes to utilize the infrastructure much better than what you can achieve manually.
+
+#### Health checking and self-healing
+
+
+Kubernetes monitors your app components and the nodes they run on and auto- matically reschedules them to other nodes in the event of a node failure. This frees the ops team from having to migrate app components manually and allows the team to immediately focus on fixing the node itself and returning it to the pool of available hardware resources instead of focusing on relocating the app.
+
+#### Automatic scaling 
+
+Using Kubernetes to manage your deployed applications also means the ops team doesn’t need to constantly monitor the load of individual applications to react to sud- den load spikes. As previously mentioned, Kubernetes can be told to monitor the resources used by each application and to keep adjusting the number of running instances of each application.
+
+#### Simplifying application development
+
+If you turn back to the fact that apps run in the same environment both during development and in production, this has a big effect on when bugs are discovered.
+
+Then there’s the fact that developers don’t need to implement features that they would usually implement. This includes discovery of services and/or peers in a clustered application.
+
+As a final example of what Kubernetes brings to the table, you also need to con- sider the increase in confidence developers will feel knowing that when a new version of their app is going to be rolled out, Kubernetes can automatically detect if the new version is bad and stop its rollout immediately. This increase in confidence usually accelerates the continuous delivery of apps, which benefits the whole organization.
+
+## 1.4 Summary 
+
+- Monolithic apps are easier to deploy, but harder to maintain over time and sometimes impossible to scale.
+
+- Microservices-based application architectures allow easier development of each component, but are harder to deploy and configure to work as a single system.
+
+- Linux containers provide much the same benefits as virtual machines, but are far more lightweight and allow for much better hardware utilization.
+
+- Docker improved on existing Linux container technologies by allowing easier and faster provisioning of containerized apps together with their OS environments.
+
+- Kubernetes exposes the whole datacenter as a single computational resource for running applications.
+
+- Developers can deploy apps through Kubernetes without assistance from sysadmins.
+
+- Sysadmins can sleep better by having Kubernetes deal with failed nodes auto- matically.
+
 
