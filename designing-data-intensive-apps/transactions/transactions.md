@@ -96,3 +96,87 @@ Perfect durability doesn't exist: if all your hard disks and all your backups
 are destroyed at the same time.
 
 ### Single-Object and Multi-Object Operations
+
+Recap in ACID:
+
+- Atomicity
+> all-or-nothing guarantee
+
+- Isolation
+> transactions can run concurrently without messing each other up
+
+Multi-object transactions are often needed if several pieces of data need to be kept in sync.
+
+-  Violating isolation: one transaction reads another transaction's uncommitted writes 
+(**dirty read**)
+
+Multi-object transactions require some way of determining which read and write operations belong to the same transaction. In relational databases, that is typically done based on the client’s TCP connection to the database server: on any particular connection, everything between a BEGIN TRANSACTION and a COMMIT statement is considered to be part of the same transaction.
+
+On the other hand, many NoSQL databases don't have such a way of grouping operations together. 
+
+#### Single-object writes 
+
+Atomicity and isolation are also apply when single object is being changed.
+> e.g writing a 20 Kb json document to a database, that may failure 
+halfway through writing.
+
+Atomicity can be implemented by using a log for crash recovery, and isolation 
+can be implemented by using a lock on each object (allowing only one transaction 
+to access the object at a time).
+
+Some databases also provide more complex atomic operations, such as incrementing
+operation, which removes the need for a read-modify-write cycle.
+
+Simularly popular is a compare-and-set operation, which allows a write to 
+happen only if the value has not been concurrently changed by someone else.
+
+These single-object operations are useful, as they can prevent lost updates when sev‐ eral clients try to write to the same object concurrently.
+
+However, they are not transactions in the usual sense of the word. Compare-and-set and other single-object operations have been dubbed “light‐ weight transactions”.
+
+A transaction is usually understood as a mechanism for grouping multiple operations on multiple objects into one unit of execution.
+
+#### The need for multi-object transactions 
+
+Not implemented in multiple databases, because it's hard to implement it across 
+partitions and in some cases high availability or performance is more important.
+
+There are some use cases in which single-object inserts, updates, and deletes are sufficient:
+
+- Row of one table have a reference to a row in another table.
+> Multi-object transactions allow you to ensure that these refer‐ ences remain valid: when inserting several records that refer to one another, the foreign keys have to be correct and up to date, or the data becomes nonsensical.
+
+- Updating a denormalized information (update several objects in one go)
+
+- Maintaining indexes
+> Update of column triggers an update of secondary index.
+
+Such applications can still be implemented without transactions. However, error han‐ dling becomes much more complicated without atomicity, and the lack of isolation can cause concurrency problems.
+
+#### Handling errors and aborts
+
+A key feature - abort of a transaction.
+
+Not all systems follow that phlosophy, e.g datastores with leaderless replication work 
+much more on a "best effort" basis - "database will do much as it can, and if it 
+runs into an error, it won't undo something it has already done". So that's an 
+application responsibility to recover from errors.
+
+Errors will inevitably happen, but many software developers prefer to think only about the happy path rather than the intricacies of error handling. 
+
+Retrying an aborted transaction is a simple and effective error handling mechanism, it isn’t perfect:
+
+- If the transaction actually succeeded, but the network failed while the server tried to acknowledge the successful commit to the client (so the client thinks it failed), then retrying the transaction causes it to be performed twice—unless you have an additional application-level deduplication mechanism in place.
+
+- If the error is due to overload, retrying the transaction will make the problem worse, not better. To avoid such feedback cycles, you can limit the number of retries, use exponential backoff, and handle overload-related errors differently from other errors (if possible).
+
+-  It is only worth retrying after transient errors (for example due to deadlock, 
+isolation violation); after a permanent error (such as constraint violation) a 
+retry will simply fail again.
+
+- If the transaction also has side effects outside of the database, those side effects may happen even if the transaction is aborted.
+
+- If the client process fails while retrying, any data it was trying to write to the database is lost.
+
+### Weak Isolation Levels
+
