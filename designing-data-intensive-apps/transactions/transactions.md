@@ -277,4 +277,28 @@ These rules apply to both creation and deletion of objects.
 
 ##### Indexes and snapshot isolation 
 
+How do indexes work in a multi-version database? One option is to have the index simply point to all versions of an object and require an index query to filter out any object versions that are not visible to the current transaction.
+
+In practice, many implementation details determine the performance of multi-version concurrency control.
+> Postgres avoiding indexes update if different versions of the same object can fit 
+> on the same page. 
+
+Another approach is to use **append-only/copy-on-write B-tree** indexes, 
+which not overwrite pages of the tree when they are updated, but instead 
+creates a new copy of the page with the updated data.
+
+Parent pages, up to the root of the tree, are copied and updated to point to the new versions of their child pages. Any pages that are not affected by a write do not need to be copied, and remain immutable.
+
+With append-only B-trees, every write transaction (or batch of transactions) creates a new B-tree root, and a particular root is a consistent snapshot of the database at the point in time when it was created. There is no need to filter out objects based on transaction IDs because subsequent writes cannot modify an existing B-tree.
+> It also requires a garbage-collection process to clean up old B-tree roots that are no longer needed.
+
+##### Repeatable read and naming confusion
+
+Several databases implement repeatable read, there are big differ‐ ences in the guarantees they actually provide, despite being ostensibly standardized.
+
+As a result, nobody really knows what repeatable read means.
+
+### Preventing Lost Updates 
+
+
 
