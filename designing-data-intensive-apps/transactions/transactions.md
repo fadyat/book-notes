@@ -229,3 +229,52 @@ However, the approach of requiring read locks does not work well in practice, be
 
 Better solution: for every object that is written, the database remembers both the old com‐ mitted value and the new value set by the transaction that currently holds the write lock. 
 
+#### Snapshot Isolation and Repeatable Read 
+
+**Nonrepeatable read** or **read skew** is when a transaction reads the same 
+item several times and sees different results each time.
+
+Read skew is considered acceptable under read committed isolation.
+
+However, some situations cannot tolerate such temporary inconsistency:
+- Backups 
+> Taking a backup requires making a copy of the entire database, which may take hours on a large database. During the time that the backup process is running, writes will continue to be made to the database.
+
+- Analytic queries and integrity checks
+> Sometimes, you may want to run a query that scans over large parts of the database. 
+
+**Snapshot isolation** is the most common solution to this problem. 
+
+The idea is that each transaction reads from a consistent snapshot of the database—that is, the trans‐ action sees all the data that was committed in the database at the start of the transaction.
+> Even if the data is subsequently changed by another transaction, each transaction sees only the old data from that particular point in time.
+
+##### Implementing snapshot isolation 
+
+Like read committed isolation, implementations of snapshot isolation typically use write locks to prevent dirty writes.
+
+However, reads do not require any locks. From a performance point of view, a key principle of snapshot isolation is readers never block writers, and writers never block readers.
+
+This allows a database to handle long-running read queries on a consistent snapshot at the same time as processing writes normally, without any lock contention between the two.
+
+The database must potentially keep several different committed versions of an object, because various in-progress trans‐ actions may need to see the state of the database at different points in time. Because it maintains several versions of an object side by side, this technique is known as **multiversion concurrency control (MVCC)**.
+
+However, storage engines that support snapshot isolation typically use MVCC for their read committed isolation level as well. A typical approach is that read committed uses a separate snapshot for each query, while snapshot isolation uses the same snapshot for an entire transaction.
+
+##### Visibility rules for observing a consistent snapshot 
+
+When a transaction reads from the database, transaction IDs are used to decide which objects it can see and which are invisible.
+
+- At the start of each transaction, , the database makes a list of all the other 
+transactions that are in progress. Any writes that those transactions have made are ignored.
+
+- Any writes made by aborted transactions are ignored.
+
+- Any writes made by transactions with a later transaction ID
+
+- All other writes are visible to the application’s queries.
+
+These rules apply to both creation and deletion of objects.
+
+##### Indexes and snapshot isolation 
+
+
