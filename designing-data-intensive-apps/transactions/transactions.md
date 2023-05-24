@@ -180,3 +180,52 @@ retry will simply fail again.
 
 ### Weak Isolation Levels
 
+If two transactions don't touch the same data, they can safety execute in parallel.
+
+Concurrency is hard and databases a trying to hide concurrency issues from application 
+developers by providing __transaction isolation__.
+
+**Serializable isolation** means that the databases guarantees that transactions 
+have the same effect as if the run serially (one after another) without any
+concurrency.
+
+In practice, isolation is unfortunately not that simple. Serializable isolation has a 
+performance cost, and many databases don’t want to pay that price.
+
+#### Read Committed 
+
+- No dirty reads
+> When reading you will only see data that has been committed.
+- No dirty writes
+> When writing you will only overwrite data that has been committed.
+
+##### No dirty reads
+
+Can another transation see data of another transaction that has not been committed yet?
+If yes, then it's called **dirty read**.
+
+When to prevent dirty reads?
+
+- If a transaction needs to update several objects
+- If a transaction aborts, any writes it has made need to be rolled back 
+
+##### No dirty writes
+
+What happens if two transactions concurrently try to update the same object in a database? We don’t know in which order the writes will happen, but we normally assume that the later write overwrites the earlier write.
+
+By preventing dirty writes, this isolation level avoids some kinds of concurrency problems:
+
+- If transactions update multiple objects, dirty writes can lead to a bad outcome.
+
+- However, read committed does not prevent the race condition between two counter increments
+
+##### Implementing read committed 
+
+Most commonly, databases prevent dirty writes by using row-level locks: when a transaction wants to modify a particular object (row or document), it must first acquire a lock on that object.
+
+How do we prevent dirty reads? One option would be to use the same lock, and to require any transaction that wants to read an object to briefly acquire the lock and then release it again immediately after reading.
+
+However, the approach of requiring read locks does not work well in practice, because one long-running write transaction can force many read-only transactions to wait until the long-running transaction has completed.
+
+Better solution: for every object that is written, the database remembers both the old com‐ mitted value and the new value set by the transaction that currently holds the write lock. 
+
