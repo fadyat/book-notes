@@ -300,5 +300,79 @@ As a result, nobody really knows what repeatable read means.
 
 ### Preventing Lost Updates 
 
+The read committed and snapshot isolation levels we’ve discussed so far have been primarily about the guarantees of what a read-only transaction can see in the pres‐ ence of concurrent writes.
+
+We have mostly ignored the issue of two transactions writing concurrently - we have only 
+discussed dirty writes.
+
+**Lost update** can occur if an application reads some value from the database, 
+modifies it, and writes back the modified value. If two transactions do it concurrently,
+one of the modifications can be lost, because the second doesn't include info about first 
+modification. 
+
+Some scenarios:
+
+- Incrementing a counter or updating (reading, calculating, writing back)
+- Editing the same document by two users concurrently
+
+#### Atomic write operations 
+
+Many databases provide atomic update operations, which remove the need to imple‐ ment read-modify-write cycles in application code.
+
+```sql 
+UPDATE counters SET value = value + 1 WHERE key = 'foo';
+```
+
+This query is concurrent-safe in most databases.
+
+Atomic operations are usually implemented by taking an exclusive lock on the object when it is read.
+
+Another option is to simply force all atomic operations to be executed on a single thread.
+
+#### Explicit locking 
+
+Another option for preventing lost updates, if the database’s built-in atomic opera‐ tions don’t provide the necessary functionality, is for the application to explicitly lock objects that are going to be updated.
+
+```sql 
+
+BEGIN TRANSACTION;
+SELECT * FROM figures
+WHERE name = 'robot' AND game_id = 222 FOR UPDATE;
+-- Check whether move is valid, then update the position -- of the piece that was returned by the previous SELECT. UPDATE figures SET position = 'c4' WHERE id = 1234;
+COMMIT;
+```
+
+> The `FOR UPDATE` clause indicates that the database should take a lock on all rows
+returned by this query.
+
+This works, but to get it right, you need to carefully think about your application logic. It’s easy to forget to add a necessary lock somewhere in the code, and thus introduce a race condition.
+
+#### Automatically detecting lost updates 
+
+An alternative is to allow them to execute in parallel and, if the transaction manager detects a lost update, abort the transaction and force it to retry its read-modify-write cycle.
+
+An advantage of this approach is that databases can perform this check efficiently in conjunction with snapshot isolation.
+
+Lost update detection is a great feature, because it doesn’t require application code to use any special database features.
+
+#### Compare-and-set 
+
+The purpose of this operation is to avoid lost updates by allowing an update to happen only if the value has not changed since you last read it.
+
+```sql 
+-- This may or may not be safe, depending on the database implementation
+UPDATE wiki_pages SET content = 'new content'
+    WHERE id = 1234 AND content = 'old content';
+```
+
+However, if the database allows the WHERE clause to read from an old snapshot, this statement may not prevent lost updates, because the condition may be true even though another concurrent write is occurring.
+
+#### Conflict resolution and replication 
+
+Locks and compare-and-set operations assume that there is a single up-to-date copy of the data. However, databases with multi-leader or leaderless replication usually allow several writes to happen concurrently and replicate them asynchronously.
+
+Common approach in such replicated databases is to allow concurrent writes to create several conflicting versions of a value (also known as siblings), and to use application code or special data structures to resolve and merge these versions after the fact.
+
+### Write Skew and Phantoms
 
 
