@@ -498,4 +498,66 @@ number of reads and writes.
 
 #### Encapsulating transactions in stored procedures 
 
+At the begining designers thought that all user flow must be done with one transaction:
+searching, input some form data - all in one transaction.
+But waiting for user input is a long process and it's not good to keep transaction open.
+
+Solution: new HTTP request starts a new transaction. 
+
+Even though the human has been taken out of the critical path, transactions have 
+continued to be executed in an interactive client/server style. 
+> App makes a query, reads the result, perhaps makes another query and so on.
+
+In this interactive style of transaction a lot of time is spent in network communication
+between the application and the database.
+> If you were to disallow concurrency in the database and only process one transaction at a time, the throughput would be dreadful because the database would spend most of its time waiting for the application.
+
+For this reason, systems with single-threaded serial transaction processing don’t allow interactive multi-statement transactions.
+
+Instead, the app must submit the entire transaction code to the database ahead of time,
+as a **stored procedure**.
+
+![](./docs/interactive-stored.png)
+
+#### Pros and cons of stored procedures
+
+Stored procedures have existed for some time in relational databases, and they have been part of the SQL standard, 
+but later they have gained a bad reputation, reasons:
+
+- Each database vendor has its own language for stored procedures (PL/pgSQL in PostgreSQL, PL/SQL in Oracle).
+
+- Code running in a database is difficult to manage. 
+
+- A database is often much more performance-sensitive than an app server. 
+
+> PL/Rust - https://github.com/tcdi/plrust
+
+Modern implementations of stored procedures are using programming languages 
+instead of SQL (e.g Redis Lua scripts).
+
+With stored procedures and in-memory data, executing all transactions on a single thread becomes feasible.
+As they don’t need to wait for I/O and they avoid the overhead of other concurrency control mechanisms, they can achieve quite good throughput on a single thread.
+
+#### Partitioning 
+
+Single-threaded transaction processor can become a serious bottleneck for 
+application with high write throughput.
+
+In order to scale to multiple CPU cores, and multiple nodes, you can potentially partition yout data.
+
+Each partition can have its own transaction processing thread running independently from the others.
+
+However, for any transaction that needs to access multiple partitions, the database must coordinate the transaction across all the partitions that it touches.
+The stored procedure needs to be performed in lock-step across all partitions to ensure serializability
+accross the whole system. 
+
+Whether transactions can be single-partition depends very much on the structure of the data used by the application.
+
+#### Summary of serial execution 
+
+- Every transaction must be small and fast.
+- It is limited to use cases where the active dataset can fit in memory.
+- Write throughput must be low enough to be handled on a single CPU core.
+- Cross-partition transactions are possible, but it's not easy to implement.
+
 
