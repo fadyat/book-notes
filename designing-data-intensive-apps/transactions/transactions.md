@@ -375,4 +375,127 @@ Common approach in such replicated databases is to allow concurrent writes to cr
 
 ### Write Skew and Phantoms
 
+With **dirty writes** and **lost updates** may occurs **write skew**. 
+
+#### Characterizing write skew 
+
+You can think about write skew as a generalization of the lost update problem. 
+Write skew can occur when two transations read the same object, and them updates 
+some of those objects (different transactions may update different objects).
+In special cases where different transactions update the same object, you get a dirty 
+write or lost update anomaly. 
+> Opportunity to make an update for some true statement, that will return false 
+> if operations are done in subsequent way. 
+
+
+Options for fixing the write skew:
+
+- Atomic single-object operations don't help, as multiple objects are involved. 
+
+- Automatic detection of lost updates, which can be found in some implementations 
+of snapshot isolation, unfortunately doesn't help either. 
+> Automatically preventing write skew requires true serializable isolation. 
+
+- Some databases allow you to configure constraint, which are then enforced by the database.
+
+- If you can't use a serializable isolation level, the second best option to explicitly 
+lock the rows that the transaction depends on. 
+
+```sql 
+BEGIN TRANSACTION;
+
+SELECT * FROM doctors
+WHERE on_call = true
+AND shift_id = 1234 FOR UPDATE;
+
+UPDATE doctors
+SET on_call = false WHERE name = 'Alice' AND shift_id = 1234;
+
+COMMIT;
+```
+
+#### More examples of write skew 
+
+- Meeting room booking system 
+> Can't be 2 bookings for the same meeting room at the same time. 
+> Before making reservation we check first. 
+
+```sql 
+BEGIN TRANSACTION 
+
+-- Check for any existing bookings that overlap with the period of noon-1pm
+SELECT COUNT(*) FROM bookings 
+    WHERE room_id = 123 AND 
+     end_time > '2015-01-01 12:00' AND star_time < '2015-01-01 13:00';
+
+-- If the previous query returned zero:
+INSERT INTO bookings
+    (room_id, start_time, end_time, user_id)
+    VALUES (123, '2015-01-01 12:00', '2015-01-01 13:00', 666);
+
+COMMIT;
+```
+
+Unfortunately, snapshot isolation does not prevent another user from concurrently inserting a conflicting meeting. In order to guarantee you won’t get sched‐ uling conflicts, you once again need serializable isolation.
+
+- Multiplayer game 
+> Lock won't help you 
+
+- Claiming a username 
+> Unique constraint is a simple solution here 
+
+- Preventing double-spending 
+
+#### Phantoms causing write skew 
+
+Where a write in one transaction changes the result of a search query in another transaction, is called a phantom.
+
+Snapshot isolation avoids phantoms in read-only queries, but in read-write transactions like the examples we discussed, phantoms can lead to particularly tricky cases of write skew.
+
+#### Materializing conflicts 
+
+If the problem of phantoms is that there is no object to which we can attach the locks, perhaps we can artificially introduce a lock object into the database?
+
+Addition tables
+
+### Serilizability
+
+Still some race conditions are not prevented. 
+
+- Isolation levels are hard to understand and inconsistently implemented in different 
+databases.
+
+- Difficult to tell whether application code is safe to run at a particular 
+isolation level.
+
+- No good tools to help us detect race conditions.
+
+**Serializable isolation** is usually regarded as a strongest isolation level.
+
+It guarantees that even though transactions may execute in parallel, the end result is the same as if they had executed one at a time, serially, without any concurrency.
+
+The database prevents all possible race conditions.
+
+But if serializable isolation is so much better than the mess of weak isolation levels, then why isn’t everyone using it? To answer this question, we need to look at the options for implementing serializability, and how they perform.
+
+- Literally executing transactions in a serial order 
+- Two-phase locking 
+- Optimistic concurrency control techniques such as serializable snapshot isolation
+
+### Actual Serial Execution
+
+The simplest way of avoiding concurrency problems is to remove the concurrency entirely: to execute only one transaction at a time, in serial order, on a single thread.
+
+By doing so, we completely sidestep the problem of detecting and preventing con‐ flicts between transactions: the resulting isolation is by definition serializable.
+
+If multi-threaded concurrency was considered essential for getting good performance during the previous 30 years, what changed to make single-threaded execution possible?
+
+- RAM became cheap enough that for many use cases is now feasible to keep the entire 
+active dataset in memory.
+
+- Database designers realized that OLTP transactions are typically short and make a small 
+number of reads and writes. 
+
+#### Encapsulating transactions in stored procedures 
+
 

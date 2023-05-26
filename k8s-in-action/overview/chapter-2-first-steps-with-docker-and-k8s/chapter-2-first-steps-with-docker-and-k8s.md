@@ -226,7 +226,49 @@ docker run -p 8080:8080 -d <docker-hub-id>/kubia
 
 After the push to Docker Hub is complete, the image will be available to everyone.
 
-It doesn’t get much simpler than that. And the best thing about this is that your appli- cation will have the exact same environment every time and everywhere it’s run.
+It doesn’t get much simpler than that. And the best thing about this is that your application will have the exact same environment every time and everywhere it’s run.
+
+## 2.2 Setting up a Kubernetes cluster 
+
+Setting up a cluster from a beginning it isn't a simple task.
+
+We can use single-node local cluster or cluster configured by the cloud providers. 
+
+### 2.2.1 Running a local single-node Kubernetes cluster with Minikube
+
+Minikube is a tool that sets up a single-node cluster that’s great for both testing Kubernetes and developing apps locally.
+
+#### Installing Minikube
+
+https://github.com/kubernetes/minikube
+
+I'm using Mac M1 so because of that I'm using minikube with podman driver.
+
+> I didn't remember all previous commands, because I set up it earlier.
+
+```sh 
+podman machine start podman-machine-default
+```
+
+```sh 
+minikube start --driver=podman
+```
+
+> 🏄  Done! kubectl is now configured to use "minikube" cluster and "default" namespace by default 
+
+> But it still have crushes with M1 - it's better to use cloud provider.
+
+#### Installing the Kubernetes client (kubectl)
+
+```sh 
+brew install kubectl
+```
+
+#### Checking to see the cluster is up and kubectl can talk to it 
+
+```sh 
+kubectl cluster-info
+```
 
 
 
