@@ -560,4 +560,74 @@ Whether transactions can be single-partition depends very much on the structure 
 - Write throughput must be low enough to be handled on a single CPU core.
 - Cross-partition transactions are possible, but it's not easy to implement.
 
+### Two-Phase Locking (2PL) 
+
+Locks are often used to prevent dirty writes. If two transacions concurrently 
+try to write to the same object, the lock encures that the second writer must wait 
+until the first one has finished its transaction before it may continue.
+
+2PL is simular, but makes requirements much stronger. 
+
+Several transactions are allowed to concurrently read the same object as long 
+as nobody is writing to it. 
+
+In 2PL, writerts don't just block writers, they also block readers and vice versa.
+
+> In snapshot isolation, readers don't block writers and writers don't block readers.
+
+#### Implementation of two-phase locking 
+
+The blocking of readers and writers is implemented by a having a lock on each 
+object in the database. The lock can be in **shared mode** or in **exclusive mode**.
+
+- If want to read, must first acquire the lock in shared mode. 
+> Several transactions allowed to hold the lock in shared mode, but if another 
+transation have exclusive lock, these transactions must wait. 
+
+- If want to write, must first acquire the lock in exclusive mode.
+> Transactions may hold the lock, must wait until any lock exists. 
+
+- If transaction first read and then writes, must upgrade shared to exclusive.
+
+- After a transaction has acquired the lock, must continue hold the lock until 
+commit/abort of transaction.
+
+Deadlocks may happen, database automatically detect them. 
+
+#### Performance of two-phase locking 
+
+Transaction throughput and response times of queries are significantly worse under two-phase locking than under weak isolation.
+
+Traditional relational databases don’t limit the duration of a transaction, because they are designed for interactive applications that wait for human input.
+
+Although deadlocks can happen with the lock-based read committed isolation level, they occur much more frequently under 2PL serializable isolation.
+
+#### Predicate locks 
+
+**Predicate lock** works the same as a shared/exclusive lock, but belongs not to a 
+particular object, it belongs to all objects that match some search condition.
+
+Restricts access as follows:
+
+- If wants to read objects match some condition, it must acquire a shared-mode lock on the 
+conditions of the query.
+> If another have lock, must wait. 
+
+- If wants to insert/update/delete, must check for any predicate lock.
+> If another have lock, must wait. 
+
+The key idea here is that a predicate lock applies even to objects that do not yet exist in the database, but which might be added in the future (phantoms).
+
+If two-phase locking includes predicate locks, the database prevents all forms of write skew and other race conditions, and so its isolation becomes serializable.
+
+#### Index-range locks 
+
+Unfortunately, predicate locks do not perform well: if there are many locks by active transactions, checking for matching locks becomes time-consuming. 
+
+For that reason, most databases with 2PL actually implement index-range locking.
+
+It's safe to simplify a predicate by making it match greater set of objects.
+
+### Serializable Snapshot Isolation (SSI) 
+
 
