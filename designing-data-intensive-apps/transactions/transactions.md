@@ -630,4 +630,122 @@ It's safe to simplify a predicate by making it match greater set of objects.
 
 ### Serializable Snapshot Isolation (SSI) 
 
+On the one hand, we have implementations of serializability that don’t perform well
+(2PL) or don't scale well (serial execution).
+
+On the other hand, we have weak isolation levels that have good performance, but are prone to various race conditions.
+
+An algorithm called **serializable snapshot isolation (SSI)** is very promising. 
+It provides full serializability, but only a small performance penalty compared to snapshot 
+isolation.
+
+#### Pessimistic versus optimistic concurrency control 
+
+2PL is a so-called pessimistic concurrency control mechanism: it's based on principle 
+that if anything might possible go wrong, it's better to wait until the situation is safe again
+before doing anything. Like mutual exclusion in multi-threaded programming.
+
+Serial execution is, in a sense, pessimistic: it's equivalent to each transaction having 
+an exclusive lock on entire database (or partition). Compensation - transactions are fast enough. 
+
+SSI is an optimistic concurrency control technique. When transaction wants to commit, the database
+checks whether anything bad happened; if so, the transaction is aborted and has to be retried.
+Only transactions that executed serializably are allowed to commit. 
+
+- High contention (many transactions trying to access the same objects = many aborts)
+- Additional transaction load can make performance worse if system is already close to its max
+
+Contention can be reduced with commutative atomic operations, for example increment of counter 
+don't change final state in different execution orders.
+
+#### Decisions based on an outdated premise 
+
+Previously: write skew in snapshot isolation.
+
+Put another way, transaction is taking an action based on **premise** (a fact that was true 
+at the beginning of the transaction), later when transaction wants to commit, it checks
+whether premise is still true.
+
+How does the database know if a query result might have changed?
+
+- detecting reads of a stale MVCC object version (uncommitted write occurred before read)
+- detecting writes that affects prior reads (the write occurs after the read)
+
+#### Detecting stale MVCC reads 
+
+Recall that SSI isolation is usually implemented by MVCC (multi-version concurrency control).
+
+When a transaction reads from a consistent snapshot in an MVCC database, it ignores writes 
+that were made by any other transactions that hadn't yet committed at the time when the 
+snapshot was taken.
+
+In order to prevent this anomaly, the database needs to trach when a transaction ignores 
+another transaction's writes due to MVCC visibility rules.
+
+When database wants to commit, it checks whether any of the ignored writes have now been 
+committed, and if so, the transaction is aborted.
+
+#### Detecting writes that affect prior reads 
+
+The second case to consider is when another transaction modifies data after it has been read. 
+
+In the context of 2PL we discussed index-range locks, which allows to lock access to all rows 
+matching some search query. We can use a simular technique here, except that SSI don't 
+block other transacions.
+
+Each transaction keeps track of which objects it has read, and which objects it has written. 
+When a transaction wants to commit, the database checks whether any other transaction has 
+written to an object that was previously read by the committing transaction.
+
+#### Performance of serializable snapshot isolation 
+
+- Less detailed tracking is faster, but may lead to more transactions being aborted 
+than strictly necessary.
+
+- In some cases, it's okey for a transaction to read information that was overwritten 
+by another transaction.
+
+- Compared to 2PL, the big advantage of SSI is that one transaction doesn't need to block 
+waiting for locks held by another transaction.
+
+- Compared to serial execution, serializable snapshot isolation is not limited to the 
+throughput of a single CPU core. 
+
+- The rate of aborts significantly affects the overall performance of SSI.
+
+### Summary
+
+Transactions are an abstraction layer that allows an application to pretend that certain 
+concurrency problems and certain kinds of hardware and software faults don't exist.
+
+Several isolation levels: read commited, snapshot isolation (repeatable read), serializable.
+
+- **dirty reads** - reading uncommitted data 
+- **dirty writes** - overwriting uncommitted data 
+- **read skew (nonrepeatable reads)** - different parts of the database at different
+points in time. 
+- **lost updates** - two transactions concurrently reading and writing the same object,
+one overwriting the other's changes.
+- **write skew** - transaction reads something, makes a decision based on the value it 
+saw, and writes the decision to the database, but by the time it commits, that decision 
+is no longer valid.
+- **phantom reads** - transaction reads objects matching some search condition, another 
+transaction makes a write that affects the results of that search. 
+
+Weak isolation levels protect against some of the anomalies, but some also 
+can be solved on application level using explicit locking.
+Only serializable isolation level protects against all anomalies.
+
+Three different approaches to implementing serializable isolation:
+
+- **Execution of transactions in a serial order** - effective for small transactions, 
+with low throughput requirements.
+
+- **Two-phase locking (2PL)** - standard way of implementing serializably, but have 
+significant performance penalty.
+
+- **Serializable snapshot isolation (SSI)** - optimistic concurrency control mechanism,
+allowing transaction to proceed without blocking. When a transaction wants to commit, 
+it's checked, and it's aborted if the execution wasnt't serializable.
+
 
