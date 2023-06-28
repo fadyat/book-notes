@@ -1,0 +1,67 @@
+run:
+  timeout: 5m
+  output:
+    format: tab
+  skip-dirs:
+    - vendor
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  maligned:
+    suggest-new: true
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  misspell:
+    locale: US
+  lll:
+    line-length: 140
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+    disabled-checks:
+      - wrapperFunc
+      - hugeParam
+      - rangeValCopy
+
+linters:
+  enable:
+    - bodyclose
+    - megacheck
+    - govet
+    - unconvert
+    - gas
+    - gocyclo
+    - dupl
+    - misspell
+    - unparam
+    - unused
+    - typecheck
+    - ineffassign
+    - stylecheck
+    - gochecknoinits
+    - exportloopref
+    - gocritic
+    - nakedret
+    - gosimple
+    - prealloc
+    - staticcheck
+  fast: false
+  disable-all: true
+
+issues:
+  exclude-rules:
+    - text: "at least one file in a package should have a package comment"
+      linters:
+        - stylecheck
+    - text: "package-comments: should have a package comment"
+      linters:
+        - revive
+    - path: _test\.go
+      linters:
+        - gosec
+        - dupl
+  exclude-use-default: false
