@@ -51,7 +51,7 @@ func TestAppend(t *testing.T) {
 	assert.NotSame(t, &slice[4], &partialSlice[3], "slices don't share the same underlying array")
 }
 
-// When we create a slice from an array, it still using the same underlying array
+// When we create a slice from an array, it's still using the same underlying array
 // So when we modify the slice, it will also modify the array
 //
 // When reaching the capacity of the slice, works the same as in the previous test
@@ -101,7 +101,7 @@ func TestCopy(t *testing.T) {
 //	}
 //
 // Modification by the index will modify the original slice
-// Modification by the append won't update the length of the original slice and we don't see the new element
+// Modification by to append won't update the length of the original slice and we don't see the new element
 // When we reach a capacity of the slice, it will create a new array
 func TestAsFuncArgument(t *testing.T) {
 	slice := make([]int, 1, 3)
