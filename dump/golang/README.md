@@ -1,0 +1,4 @@
+- [Context](./context/README.md)
+- [Escape analysis](./escape-analysis/README.md)
+- [Map](./map/README.md)
+- [Slices](./slices/README.md)
