@@ -11,9 +11,9 @@ The hash table for Golang is structured as an array of buckets.
 When operation is performed as `m[key] = value`, a hash key is generated from the `key`.
 Then the low order of bits are used to select a bucket.
 
-> LOB is a bits that are located on the left side of the number.
+> LOB is a bits that taking in % of buckets number
 >
-> For example, 12 = 1100, LOB are 1, 1, ...
+> For example, hash equal 15, we have 4 buckets -> 15 % 4 = 3 <===> 1110 % log2(2) => take 2 last digits => 10 => 3
 
 ![lob](./docs/lob.png)
 
