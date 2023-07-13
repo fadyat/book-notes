@@ -400,11 +400,207 @@ impact memory.
 
 When working with a `sync.Pool`, it's important to:
 
-- when instantiating the pool, give it a `New` member variable is thread-safe when called 
+- when instantiating the pool, give it a `New` member variable is thread-safe when called
 - when you receive an instance from `Get`, make no assumptions regarding the state of the object you receive back.
 - make sure to call `Put` when you're done with the object. (usually done with `defer`)
-- objects in the pool must be roughly uniform 
+- objects in the pool must be roughly uniform
 
 ### Channels
+
+Channels are one of the synchronization primitives in Go derived from Hoare’s Communicating Sequential Processes (CSP).
+
+While they can be used to synchronize access to memory, they are best used to
+communicate values between goroutines.
+
+Can read and write to channels, channels are typed.
+
+```go
+stream := make(chan int)
+```
+
+Also we can define the direction of the channel. (corresponing to send and receive)
+
+```go
+receiveStream := make(<-chan int)
+sendStream := make(chan<- int)
+```
+
+You will get a compile-time error if you try to send to a receive-only channel or receive from a send-only channel.
+
+Channels in Go are **blocking**.
+
+When reading from a channel can use a second variable to check if the channel is closed.
+
+```go
+val, ok := <-stream
+```
+
+In programs it's very useful to be able to indicate that no more values will be sent on a channel,
+this can be done by closing the channel.
+
+```go
+stream := make(chan int)
+close(stream)
+```
+
+When channel is closed we still can continue to read from it.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func putSomeData(stream chan<- interface{}) {
+	defer func() {
+		close(stream)
+		fmt.Println("close stream")
+	}()
+
+	for i := 0; i < 5; i++ {
+		stream <- i
+	}
+}
+
+func main() {
+	// making buffered channel to close channel before reading
+	stream := make(chan interface{}, 5)
+
+	// blocking read = deadlock
+	//  `ok` returned only if channel is closed or have some data
+	//
+	// v, ok := <-stream
+	// fmt.Printf("%v, %v\n", v, ok)
+
+	go putSomeData(stream)
+
+	time.Sleep(time.Second)
+	fmt.Println("sleep done")
+	for i := 0; i < 10; i++ {
+		v, ok := <-stream
+		fmt.Printf("%v, %v\n", v, ok)
+	}
+
+	stream = make(chan interface{}, 5)
+	go putSomeData(stream)
+
+	// range will perform auto exit if channel is closed
+	for v := range stream {
+		fmt.Printf("%v\n", v)
+	}
+}
+```
+
+We can close channel to unblock all goroutines that are waiting on it. (like `sync.Cond`)
+
+We can also create buffered channel - channel with a capacity.
+
+```go
+stream := make(chan int, 5)
+```
+
+Channels are blocking only when they are limited by their capacity.
+Unbuffered channels are always blocking, because they have no capacity.
+
+Default value for channel is `nil`, so if you try to send or receive from `nil`
+channel you will get a runtime error.
+
+Closing a `nil` or closed channel will also result in a runtime error.
+
+#### Ownership.
+
+The goroutine that owns the channel should:
+
+- instantiate the channel
+- perform writes or pass ownership to another goroutine
+- close the channel
+- encapsulate the previous three things in this list and expose them via a reader channel.
+
+With such logic we are removing all possible `panic` from our code.
+
+```go
+package main
+
+func main() {
+	owner := func() <-chan int {
+		ch := make(chan int, 5)
+
+		go func() {
+			defer close(ch)
+
+			for i := 0; i < 5; i++ {
+				ch <- i
+			}
+		}()
+
+		return ch
+	}
+
+	results := owner()
+	for result := range results {
+		println("result:", result)
+	}
+
+	println("done")
+}
+```
+
+#### The `select` Statement
+
+The select statement allows to bind a set of send and receive operations together to wait for one of them to complete.
+
+Getting first channel that is ready.
+
+```go
+var c1, c2 <-chan interface{}
+var c3 chan<- interface{}
+
+select {
+case <-c1:
+    // do something
+case <-c2:
+    // do something
+case c3 <- struct{}{}:
+    // do something
+}
+```
+
+Selection of the channel is pseudo-random.
+
+To avoid blocking we can use `time.After` channel.
+
+```go
+var c <-chan int
+
+select {
+case <-c:
+case <-time.After(1 * time.Second):
+    fmt.Println("Timed out.")
+}
+```
+
+If we need to perform some action while waiting for a channel to be ready, we can use `default` case.
+Usually you’ll see a default clause used in conjunction with a `for` loop.
+
+```go
+for {
+    select {
+    case <-c:
+        // do something
+    default:
+        // skip
+    }
+    
+    // do something while waiting
+}
+```
+
+### The GOMAXPROCS Lever
+
+Controls the number of OS threads that can execute Go code simultaneously.
+
+Automatically set to the number of cores on the machine.
 
 
