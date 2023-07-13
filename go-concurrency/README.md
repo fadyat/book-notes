@@ -9,3 +9,4 @@ Katherine Cox-Buday.
 
 - [An introduction to Concurrency](concurrency-intro/concurrency-introduction.md)
 - [Modeling your code: Communicating sequential processes](modeling-your-code/modeling-your-code.md)
+- [Go's Concurrency Building Blocks](./go-concurrency-building-blocks/go-concurrency-building-blocks.md)
