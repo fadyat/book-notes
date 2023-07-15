@@ -11,3 +11,4 @@ Katherine Cox-Buday.
 - [Modeling your code: Communicating sequential processes](modeling-your-code/modeling-your-code.md)
 - [Go's Concurrency Building Blocks](./go-concurrency-building-blocks/go-concurrency-building-blocks.md)
 - [Concurrency Patterns in Go](./concurrency-patterns/concurrency-patterns.md)
+- [Concurrency at Scale](./concurrency-at-scale/concurrency-at-scale.md)
