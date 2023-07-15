@@ -240,7 +240,6 @@ There are a few ways to avoid sending duplicate messages:
   > If your algorithm allows it, or your concurrent process is idempotent
 
 - poll the parent goroutine for permission
-
   > can use bidirectional communication with your parent to explicitly request permission to send your message. (simular
   > to heartbeats)
   >
@@ -249,3 +248,251 @@ There are a few ways to avoid sending duplicate messages:
 When designing your concurrent processes, be sure to take into account timeouts and cancellation.
 
 ### Heartbeats
+
+Heartbeats are a way for concurrent processes to signal life to outside parties.
+Heartbeats have been around since before Go, and remain useful within it.
+
+They allow us insights into our system, and they can make testing the system deterministic when it might otherwise not
+be.
+
+A heartbeat is a way to signal to its listeners that everything is well, and that the silence is expected.
+
+There are two different types of heartbeats:
+
+- that occur on a time interval
+- that occur at the beginning of a unit of work
+
+By using a heartbeat, we have successfully can avoid a deadlock, and we remain deterministic by not having to rely on a
+longer timeout:
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// Notice that because we might be sending out multiple pulses
+	// while we wait for input, or multiple pulses while waiting to send results,
+	// all the select statements need to be within for loops.
+
+	doWork := func(
+		done <-chan interface{},
+		pulseInterval time.Duration,
+	) (<-chan interface{}, <-chan time.Time) {
+
+		// set up a channel to send heartbeats on.
+		heartbeat := make(chan interface{})
+		results := make(chan time.Time)
+
+		go func() {
+			// not closing channels to simulate panic at goroutine
+			//
+			// defer func() {
+			//	 close(heartbeat)
+			//	 close(results)
+			// }()
+
+			// creating channel, which will make a pulse every interval
+			pulse := time.Tick(pulseInterval)
+
+			// another ticker to simulate work coming on.
+			// interval picked higher so that we can see some heartbeats coming out
+			// of goroutine
+			workGen := time.Tick(2 * pulseInterval)
+
+			sendPulse := func() {
+				select {
+				case heartbeat <- struct{}{}:
+				// including default clause, because we want guard against fact
+				// that no one may be listening to our heartbeat.
+				//
+				// heartbeat results aren't critical
+				default:
+				}
+			}
+
+			sendResult := func(r time.Time) {
+				for {
+					select {
+					case <-done:
+						return
+					case <-pulse:
+						sendPulse()
+					case results <- r:
+						return
+					}
+				}
+			}
+
+			// Here is our simulated panic. Instead of infinitely looping until
+			// we're asked to stop, as in the previous example, we'll only loop twice.
+			for i := 0; i < 2; i++ {
+				select {
+				case <-done:
+					return
+				case <-pulse:
+					sendPulse()
+				case r := <-workGen:
+					sendResult(r)
+				}
+			}
+		}()
+
+		return heartbeat, results
+	}
+
+	// standard done channel with 10 seconds of work
+	done := make(chan interface{})
+	time.AfterFunc(10*time.Second, func() { close(done) })
+
+	const timeout = 2 * time.Second
+	heartbeat, results := doWork(done, timeout/2)
+
+	for {
+		select {
+		case _, ok := <-heartbeat:
+			if !ok {
+				return
+			}
+
+			fmt.Println("pulse")
+		case r, ok := <-results:
+			if !ok {
+				return
+			}
+
+			fmt.Printf("results %v\n", r.Second())
+		case <-time.After(timeout):
+			fmt.Println("worker goroutine isn't healthy!")
+			return
+		}
+	}
+}
+```
+
+Also note that heartbeats help with the opposite case: they let us know that long-running goroutines remain up, but are
+just taking a while to produce a value to send on the values channel.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func DoWorkLongLiving(
+	done <-chan interface{},
+	nums ...int,
+) (<-chan interface{}, <-chan int) {
+	// This ensures that there’s always at least one pulse
+	// sent out even if no one is listening in time for to send to occur.
+	heartbeatStream := make(chan interface{}, 1)
+	workStream := make(chan int)
+
+	go func() {
+		defer func() {
+			close(heartbeatStream)
+			close(workStream)
+		}()
+
+		// Here we simulate some kind of delay before the goroutine can begin working.
+		// In practice this can be all kinds of things and is nondeterministic.
+		time.Sleep(2 * time.Second)
+
+		for _, n := range nums {
+			// We don’t want to include this in the same select
+			// block as the send on results because if the receiver
+			// isn’t ready for the result, they'll receive a pulse instead,
+			// and the current value of the result will be lost.
+			//
+			// We also don’t include a case statement for the done channel
+			// since we have a default case that will just fall through.
+			select {
+			case heartbeatStream <- struct{}{}:
+			// Once again we guard against the fact that no one may be
+			// listening to our heartbeats
+			default:
+			}
+
+			select {
+			case <-done:
+				return
+			case workStream <- n:
+			}
+		}
+	}()
+
+	return heartbeatStream, workStream
+}
+
+func DoWorkLongLivingLabel(
+	done <-chan interface{},
+	pulseInterval time.Duration,
+	nums ...int,
+) (<-chan interface{}, <-chan int) {
+	heartbeatStream := make(chan interface{}, 1)
+	workStream := make(chan int)
+
+	go func() {
+		defer func() {
+			close(heartbeatStream)
+			close(workStream)
+		}()
+
+		time.Sleep(2 * time.Second)
+
+		pulse := time.Tick(pulseInterval)
+
+		// we're using a label here to make continuing
+		// from the inner loop a little simpler.
+	numLoop:
+		for _, n := range nums {
+			for {
+				select {
+				case <-done:
+					return
+				case <-pulse:
+					select {
+					case heartbeatStream <- struct{}{}:
+					default:
+					}
+				case workStream <- n:
+					continue numLoop
+				}
+			}
+		}
+	}()
+
+	return heartbeatStream, workStream
+}
+
+func main() {
+	done := make(chan interface{}, 1)
+	defer close(done)
+
+	heartbeat, results := DoWorkLongLiving(done, 1, 2, 3)
+	for {
+		select {
+		case _, ok := <-heartbeat:
+			if !ok {
+				return
+			}
+
+			fmt.Println("pulse")
+		case r, ok := <-results:
+			if !ok {
+				return
+			}
+
+			fmt.Printf("results %v\n", r)
+		}
+	}
+}
+```
+
+Heartbeats aren't strictly necessary when writing concurrent code, but this section demonstrates their utility. For any
+long-running goroutines, or goroutines that need to be tested, heartbeats are recommended.
