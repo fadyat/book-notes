@@ -117,8 +117,8 @@ func runJob(id string) error {
 	isExecutable, err := isGloballyExec(jobBinPath)
 	if err != nil {
 		// here we are customizing the error with a crafted message.
-		// we want to obfuscate the low-level details of why the job isn’t running
-		// because we feel it’s not important information to consumers of our module.
+		// we want to obfuscate the low-level details of why the job isn't running
+		// because we feel it's not important information to consumers of our module.
 		return IntermediateErr{wrapError(
 			err,
 			"can't run job %q: requisite binaries are not available",
@@ -195,7 +195,7 @@ Why we want _timeouts_:
 - attempting to prevent deadlocks
   > In a large system it can sometimes be difficult to understand the way in which data
   > might flow, or what edge cases might turn up. It is not unreasonable, and even recommended, to place timeouts on all
-  > of your concurrent operations to guarantee your system won’t deadlock.
+  > of your concurrent operations to guarantee your system won't deadlock.
 
 Reasons why request _canceled_:
 
@@ -227,14 +227,14 @@ Another issue you need to be concerned with is duplicated messages.
 
 ![](./docs/duplicate.png)
 
-Here that it’s possible for stage B to receive duplicate messages if the cancellation message comes in after stage A
+Here that it's possible for stage B to receive duplicate messages if the cancellation message comes in after stage A
 has already sent its result to stage B.
 
 There are a few ways to avoid sending duplicate messages:
 
 - to make it vanishingly unlikely that a parent goroutine will send a cancellation signal after a child goroutine has
   already reported a result.
-  > This requires bidirectional communication between the stages, and we’ll cover this "Heartbeats"
+  > This requires bidirectional communication between the stages, and we'll cover this "Heartbeats"
 
 - accept either the first or last result reported
   > If your algorithm allows it, or your concurrent process is idempotent
@@ -388,7 +388,7 @@ func DoWorkLongLiving(
 	done <-chan interface{},
 	nums ...int,
 ) (<-chan interface{}, <-chan int) {
-	// This ensures that there’s always at least one pulse
+	// This ensures that there's always at least one pulse
 	// sent out even if no one is listening in time for to send to occur.
 	heartbeatStream := make(chan interface{}, 1)
 	workStream := make(chan int)
@@ -404,12 +404,12 @@ func DoWorkLongLiving(
 		time.Sleep(2 * time.Second)
 
 		for _, n := range nums {
-			// We don’t want to include this in the same select
+			// We don't want to include this in the same select
 			// block as the send on results because if the receiver
-			// isn’t ready for the result, they'll receive a pulse instead,
+			// isn't ready for the result, they'll receive a pulse instead,
 			// and the current value of the result will be lost.
 			//
-			// We also don’t include a case statement for the done channel
+			// We also don't include a case statement for the done channel
 			// since we have a default case that will just fall through.
 			select {
 			case heartbeatStream <- struct{}{}:
@@ -496,3 +496,414 @@ func main() {
 
 Heartbeats aren't strictly necessary when writing concurrent code, but this section demonstrates their utility. For any
 long-running goroutines, or goroutines that need to be tested, heartbeats are recommended.
+
+### Replicated Requests
+
+For some applications, receiving a response as quickly as possible is the top priority.
+
+You can replicate the request to multiple handlers (whether those be goroutines, processes, or servers), and one of them
+will return faster than the other ones; you can then immediately return the result. The downside is that you'll have to
+utilize resources to keep multiple copies of the handlers running.
+
+> If this replication is done in-memory, it might not be that costly, but if replicating the handlers requires
+> replicating processes, servers, or even data centers, this can become quite costly.
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+)
+
+func main() {
+	doWork := func(
+		done <-chan interface{},
+		id int,
+		wg *sync.WaitGroup,
+		result chan<- int,
+	) {
+		started := time.Now()
+		defer wg.Done()
+
+		simulatedLoadtime := time.Duration(1+rand.Intn(5)) * time.Second
+		select {
+		case <-done:
+		case <-time.After(simulatedLoadtime):
+		}
+
+		select {
+		case <-done:
+		case result <- id:
+		}
+
+		took := time.Since(started)
+
+		if took < simulatedLoadtime {
+			took = simulatedLoadtime
+		}
+
+		fmt.Printf("%v took %v\n", id, took)
+	}
+
+	done := make(chan interface{})
+	result := make(chan int)
+
+	var wg sync.WaitGroup
+	wg.Add(10)
+
+	for i := 0; i < 10; i++ {
+		go doWork(done, i, &wg, result)
+	}
+
+	firstReturned := <-result
+	close(done)
+	wg.Wait()
+
+	fmt.Printf("recieved an answer from #%v\n", firstReturned)
+}
+```
+
+The only caveat to this approach is that all of your handlers need to have equal opportunity to service the request. In
+other words, you're not going to have a chance at receiving the fastest time from a handler that can't service the
+request.
+
+A different symptom of the same problem is uniformity. If your handlers are too much alike, the chances that any one
+will be an outlier is smaller. You should only replicate out requests like this to handlers that have different runtime
+conditions: different processes, machines, paths to a data store, or access to different data stores altogether.
+
+Although this is can be expensive to set up and maintain, if speed is your goal, this is a valuable technique. In
+addition, this naturally provides fault tolerance and scalability.
+
+### Rate Limiting
+
+Constrains the number of times some kind of resource is accessed to some finite number per unit of time.
+> The resource can be anything: API connections, disk reads/writes, network packets, errors.
+
+The point is: if you don't rate limit requests to your system, you cannot easily secure it.
+
+In distributed systems, a legitimate user could degrade the performance of the system for other users if they're
+performing operations at a high enough volume, or if the code they're exercising is buggy.
+
+Most rate limiting is done by utilizing an algorithm called the _token bucket_. It's very easy to understand, and
+relatively easy to implement as well. Let's take a look at the theory behind it.
+
+> Let's assume that to utilize a resource, you have to have an access token for the resource.
+>
+> Without the token, your request is denied. Now imagine these tokens are stored in a bucket waiting to be retrieved for
+> usage.
+>
+> The bucket has a depth of `d`, which indicates it can hold d access tokens at a time. For example, if the
+> bucket has a depth of five, it can hold five tokens.
+>
+> Now, every time you need to access a resource, you reach into the bucket and remove a token. If your bucket contains
+> five tokens, and you access the resource five times, you'd be able to do so; but on the sixth try, no access token
+> would be available.
+
+```go
+package main
+
+import (
+	"context"
+	"golang.org/x/time/rate"
+	"log"
+	"os"
+	"sort"
+	"sync"
+	"time"
+)
+
+type RateLimiter interface {
+	Wait(ctx context.Context) error
+	Limit() rate.Limit
+}
+
+type multiLimiter struct {
+	limiters []RateLimiter
+}
+
+func (m *multiLimiter) Wait(ctx context.Context) error {
+	for _, l := range m.limiters {
+		if err := l.Wait(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *multiLimiter) Limit() rate.Limit {
+	return m.limiters[0].Limit()
+}
+
+func newMultiLimiter(limiters ...RateLimiter) *multiLimiter {
+	byLimit := func(i, j int) bool {
+		return limiters[i].Limit() < limiters[j].Limit()
+	}
+
+	sort.Slice(limiters, byLimit)
+	return &multiLimiter{limiters: limiters}
+}
+
+type apiConnection struct {
+	networkLimit,
+	diskLimit,
+	apiLimit RateLimiter
+}
+
+func open() *apiConnection {
+	return &apiConnection{
+		apiLimit: newMultiLimiter(
+			rate.NewLimiter(per(2, time.Second), 1),
+			// with a burstiness of 10 to give the users their initial pool.
+			rate.NewLimiter(per(10, time.Minute), 10),
+		),
+		diskLimit: newMultiLimiter(
+			rate.NewLimiter(rate.Limit(1), 1),
+		),
+		networkLimit: newMultiLimiter(
+			rate.NewLimiter(per(3, time.Second), 3),
+		),
+	}
+}
+
+func (a *apiConnection) resolveAddress(ctx context.Context) error {
+	limiter := newMultiLimiter(a.apiLimit, a.networkLimit)
+
+	if err := limiter.Wait(ctx); err != nil {
+		return err
+	}
+
+	// work here...
+
+	return nil
+}
+
+func (a *apiConnection) readFile(ctx context.Context) error {
+	limiter := newMultiLimiter(a.apiLimit, a.diskLimit)
+
+	if err := limiter.Wait(ctx); err != nil {
+		return err
+	}
+
+	// work here...
+
+	return nil
+}
+
+func per(eventCount int, duration time.Duration) rate.Limit {
+	return rate.Every(duration / time.Duration(eventCount))
+}
+
+func main() {
+	defer log.Printf("done")
+
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.Ltime | log.LUTC)
+
+	apiConn := open()
+
+	var wg sync.WaitGroup
+	wg.Add(20)
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			defer wg.Done()
+
+			if err := apiConn.readFile(context.Background()); err != nil {
+				log.Printf("can't readfile: %v", err)
+			}
+
+			log.Printf("read file")
+		}()
+	}
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			defer wg.Done()
+
+			if err := apiConn.resolveAddress(context.Background()); err != nil {
+				log.Printf("can't resolve address: %v", err)
+			}
+
+			log.Printf("resolve address")
+		}()
+	}
+
+	wg.Wait()
+}
+```
+
+### Healing Unhealthy Goroutines
+
+In long-lived processes such as daemons, it's very common to have a set of long-lived goroutines. These goroutines are
+usually blocked, waiting on data to come to them through some means, so that they can wake up, do their work, and then
+pass the data on. Sometimes the goroutines are dependent on a resource that you don't have very good control of.
+
+In a long-running process, it can be useful to create a mechanism that ensures your goroutines remain healthy and
+restarts them if they become unhealthy. We’ll refer to this process of restarting goroutines as "healing."
+
+We’ll call the logic that monitors a goroutine’s health a **steward**, and the goroutine that it monitors a **ward**.
+
+Stewards will also be responsible for restarting a ward’s goroutine should it become unhealthy.
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+	"time"
+)
+
+func main() {
+	var or func(channels ...<-chan interface{}) <-chan interface{}
+	or = func(channels ...<-chan interface{}) <-chan interface{} {
+		switch len(channels) {
+		case 0:
+			return nil
+		case 1:
+			return channels[0]
+		}
+
+		orDone := make(chan interface{})
+
+		go func() {
+			defer close(orDone)
+
+			switch len(channels) {
+			case 2:
+				select {
+				case <-channels[0]:
+				case <-channels[1]:
+				}
+			default:
+				select {
+				case <-channels[0]:
+				case <-channels[1]:
+				case <-channels[2]:
+				case <-or(append(channels[3:], orDone)...):
+				}
+			}
+		}()
+
+		return orDone
+	}
+
+	// Here we define the signature of a goroutine that can be monitored and
+	// restarted.
+	// We see the familiar done channel, and pulseInterval and heartbeat from
+	// the heartbeat pattern.
+	type startGoroutineFn func(
+		done <-chan interface{},
+		pulseInterval time.Duration,
+	) (heartbeat <-chan interface{})
+
+	// On this line we see that a steward takes in a timeout for the goroutine
+	// it will be monitoring, and a function, startGoroutine, to start the
+	// goroutine it's monitoring.
+	// Interestingly, the steward itself returns a startGoroutineFn indicating
+	// that the steward itself is also monitorable.
+	newSteward := func(
+		timeout time.Duration,
+		startGoroutine startGoroutineFn,
+	) startGoroutineFn {
+		return func(
+			done <-chan interface{},
+			pulseInterval time.Duration,
+		) <-chan interface{} {
+			heartbeat := make(chan interface{})
+
+			go func() {
+				defer close(heartbeat)
+
+				var wardDone chan interface{}
+				var wardHeartbeat <-chan interface{}
+
+				// Here we define a closure that encodes a consistent
+				// way to start the goroutine we're monitoring.
+				startWard := func() {
+
+					// This is where we create a new channel that we'll
+					// pass into the ward goroutine in case we need to signal
+					// that it should halt.
+					wardDone = make(chan interface{})
+
+					// Here we start the goroutine we'll be monitoring.
+					// We want the ward goroutine to halt if either the steward
+					// is halted, or the steward wants to halt the ward goroutine,
+					// so we wrap both done channels in a logical-or.
+					wardHeartbeat = startGoroutine(or(wardDone, done), timeout/2)
+				}
+
+				startWard()
+				pulse := time.Tick(pulseInterval)
+
+			monitorLoop:
+				for {
+					timeoutSignal := time.After(timeout)
+
+					// This is our inner loop, which ensures that the steward
+					// can send out pulses of its own.
+					for {
+						select {
+						case <-pulse:
+							select {
+							case heartbeat <- struct{}{}:
+							default:
+							}
+						// Here we see that if we receive the ward's pulse,
+						// we continue our monitoring loop.
+						case <-wardHeartbeat:
+							continue monitorLoop
+						// This line indicates that if we don't receive a pulse
+						// from the ward within our timeout period, we request
+						// that the ward halt, and we begin a new ward goroutine.
+						case <-timeoutSignal:
+							log.Printf("steward: ward unhealthy; restarting")
+							close(wardDone)
+							startWard()
+							continue monitorLoop
+						case <-done:
+							return
+						}
+					}
+				}
+			}()
+
+			return heartbeat
+		}
+	}
+
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.Ltime | log.LUTC)
+
+	// here we see that this goroutine isn’t doing anything but
+	// waiting to be canceled. It’s also not sending out any pulses.
+	doWork := func(
+		done <-chan interface{},
+		_ time.Duration,
+	) <-chan interface{} {
+		log.Printf("ward: hello, i'm irresponsible")
+		go func() {
+			<-done
+			log.Printf("ward: i'm healing")
+		}()
+
+		return nil
+	}
+
+	doWorkWithSteward := newSteward(4*time.Second, doWork)
+
+	done := make(chan interface{})
+	time.AfterFunc(9*time.Second, func() {
+		log.Printf("main: halting steward and ward")
+		close(done)
+	})
+
+	for range doWorkWithSteward(done, 4*time.Second) {
+	}
+}
+```
