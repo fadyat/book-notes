@@ -3,7 +3,7 @@
 This is a book summary of [Concurrency in Go](https://www.oreilly.com/library/view/concurrency-in-go/9781491941294/) by
 Katherine Cox-Buday.
 
-![](concurrency-intro/pictures/gophers.png)
+<img src="concurrency-intro/pictures/gophers.png" width="50%"/>
 
 ## Table of Contents
 
@@ -12,3 +12,4 @@ Katherine Cox-Buday.
 - [Go's Concurrency Building Blocks](./go-concurrency-building-blocks/go-concurrency-building-blocks.md)
 - [Concurrency Patterns in Go](./concurrency-patterns/concurrency-patterns.md)
 - [Concurrency at Scale](./concurrency-at-scale/concurrency-at-scale.md)
+- [Goroutines and the Go Runtime](./goroutines-and-runtime/goroutines-and-runtime.md)
