@@ -1,22 +1,40 @@
-.PHONY: proto, run
+include api/make/api-calls.mk
+include api/make/env.mk
+include api/make/help.mk
 
-proto:
-	@protoc --proto_path=api/proto \
-		--go_out=api/pb \
-		--go_opt=paths=source_relative \
-		--go-grpc_out=api/pb \
-		--go-grpc_opt=paths=source_relative \
+pre: proto lint test ##@git Run pre-commit checks.
+
+proto: ##@api Generate api based on proto files.
+	@echo "Generating api based on proto files..."
+	@protoc --proto_path api/proto \
+		--go_out api/pb \
+		--go_opt paths=source_relative \
+		--go-grpc_out api/pb \
+		--go-grpc_opt paths=source_relative \
+		--grpc-gateway_out api/pb \
+		--grpc-gateway_opt paths=source_relative \
+		--grpc-gateway_opt logtostderr=true \
+		--grpc-gateway_opt generate_unbound_methods=true \
+		--openapiv2_out ./api/openapi \
+    	--openapiv2_opt logtostderr=true \
+    	--openapiv2_opt generate_unbound_methods=true \
 		api/proto/*.proto
+	@echo "Done."
 
-run:
-	@go run cmd/broker_server/main.go
+lint: ##@api Run linter.
+	@echo "Running linter..."
+	@golangci-lint run ./...
+	@echo "Done."
 
-client:
-	@go run cmd/broker_client/main.go
+test: ##@api Run tests.
+	@echo "Running tests..."
+	@go test --cover ./cmd/... ./internal/... ./pkg/...
+	@echo "Done."
 
-publish:
-	@grpcurl -plaintext localhost:8080 mq.Broker/Publish | jq
+run: ##@api Run broker gRPC and HTTP servers.
+	@go run cmd/broker_server/*.go \
+		--http-port $(HTTP_PORT) \
+		--grpc-port $(GRPC_PORT)
 
-subscribe:
-	@grpcurl -d '{"topic": "topic1"}' \
-	-plaintext localhost:8080 mq.Broker/Subscribe
+
+.PHONY: pre, proto, lint, test, run

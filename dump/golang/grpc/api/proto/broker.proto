@@ -6,24 +6,24 @@ option go_package = "github.com/fadyat/grpc-broker;pb";
 
 
 message PublishRequest {
-  string topic = 1;
-  bytes body = 2;
-  uint64 TTL = 3;
+    string topic = 1;
+    bytes body = 2;
+    uint64 ttl = 3;
 }
 
 message PublishResponse {
-  uint64 id = 1;
+    uint64 id = 1;
 }
 
 message SubscribeRequest {
-  string topic = 1;
+    string topic = 1;
 }
 
 message MessageResponse {
-  bytes body = 1;
+    bytes body = 1;
 }
 
 service Broker {
-  rpc Publish(PublishRequest) returns (PublishResponse);
-  rpc Subscribe(SubscribeRequest) returns (stream MessageResponse);
+    rpc Publish (PublishRequest) returns (PublishResponse);
+    rpc Subscribe (SubscribeRequest) returns (stream MessageResponse);
 }

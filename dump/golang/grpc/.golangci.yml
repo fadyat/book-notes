@@ -1,0 +1,68 @@
+output:
+  print-issued-lines: true
+
+run:
+  timeout: 5m
+  allow-parallel-runners: true
+  concurrency: 2
+  issue-exit-code: 0
+  skip-dirs:
+    - vendor
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  golint:
+    min-confidence: 0.1
+  maligned:
+    suggest-new: true
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  misspell:
+    locale: US
+  lll:
+    line-length: 140
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+
+linters:
+  fast: false
+  disable-all: true
+  enable:
+    - megacheck
+    - sqlclosecheck
+    - govet
+    - unconvert
+    - megacheck
+    - gas
+    - dupl
+    - misspell
+    - unused
+    - typecheck
+    - ineffassign
+    - stylecheck
+    - gochecknoinits
+    - exportloopref
+    - gocritic
+    - nakedret
+    - gosimple
+    - prealloc
+    - gosec
+
+issues:
+  exclude-rules:
+    - text: "at least one file in a package should have a package comment"
+      linters:
+        - stylecheck
+    - text: "should have a package comment, unless it's in another file for this package"
+      linters:
+        - golint
+    - path: _test\.go
+      linters:
+        - gosec
+        - dupl
+  exclude-use-default: false

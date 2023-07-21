@@ -9,28 +9,28 @@ import (
 )
 
 const (
-	port = ":8080"
+	grpcPort = ":8081"
 )
 
 func main() {
 	conn, err := grpc.Dial(
-		port, grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpcPort, grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("failed to dial: %v", err)
+		log.Panicf("failed to dial: %v", err)
 	}
 	defer func() {
 		if e := conn.Close(); e != nil {
-			log.Fatalf("failed to close connection: %v", e)
+			log.Printf("failed to close connection: %v", e)
 		}
 	}()
 
 	client := pb.NewBrokerClient(conn)
 	publishResponse, err := client.Publish(context.Background(), &pb.PublishRequest{
-		Topic: "topic", Body: []byte("hello"), TTL: uint64(1000),
+		Topic: "topic", Body: []byte("hello"), Ttl: uint64(1000),
 	})
 	if err != nil {
-		log.Fatalf("failed to publish: %v", err)
+		log.Panicf("failed to publish: %v", err)
 	}
 
 	log.Printf("published message with id: %d", publishResponse.Id)

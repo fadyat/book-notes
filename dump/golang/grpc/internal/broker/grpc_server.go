@@ -10,19 +10,19 @@ var (
 	topics = []string{"topic1", "topic2", "topic3"}
 )
 
-type Server struct {
+type GrpcServer struct {
 	pb.UnimplementedBrokerServer
 }
 
-func NewServer() *Server {
-	return &Server{}
+func NewGrpcServer() *GrpcServer {
+	return &GrpcServer{}
 }
 
-func (s *Server) Publish(ctx context.Context, in *pb.PublishRequest) (*pb.PublishResponse, error) {
+func (s *GrpcServer) Publish(ctx context.Context, in *pb.PublishRequest) (*pb.PublishResponse, error) {
 	return &pb.PublishResponse{Id: 1}, nil
 }
 
-func (s *Server) Subscribe(in *pb.SubscribeRequest, stream pb.Broker_SubscribeServer) error {
+func (s *GrpcServer) Subscribe(in *pb.SubscribeRequest, stream pb.Broker_SubscribeServer) error {
 	if pkg.In(topics, in.Topic) {
 		return stream.Send(&pb.MessageResponse{Body: []byte("hello")})
 	}
