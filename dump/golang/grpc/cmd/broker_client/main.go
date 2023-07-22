@@ -14,7 +14,8 @@ const (
 
 func main() {
 	conn, err := grpc.Dial(
-		grpcPort, grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpcPort,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		log.Panicf("failed to dial: %v", err)

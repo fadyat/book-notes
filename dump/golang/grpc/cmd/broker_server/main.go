@@ -4,20 +4,28 @@ import (
 	"context"
 	"github.com/fadyat/grpc-broker/api/pb"
 	"github.com/fadyat/grpc-broker/internal/broker"
+	"github.com/fadyat/grpc-broker/internal/logger"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"log"
 	"net"
 )
 
 func main() {
 	cfg := parseConfig()
-	listener, err := net.Listen("tcp", cfg.GrpcPort())
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+	log := initLogger()
+	logOpts := []logging.Option{
+		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			logging.UnaryServerInterceptor(logger.ToInterceptorLogger(log), logOpts...),
+		),
+		grpc.ChainStreamInterceptor(
+			logging.StreamServerInterceptor(logger.ToInterceptorLogger(log), logOpts...),
+		),
+	)
 	pb.RegisterBrokerServer(s, broker.NewGrpcServer())
 
 	// Register reflection service on gRPC server.
@@ -36,6 +44,11 @@ func main() {
 			log.Fatalf("failed to serve: %v", e)
 		}
 	}()
+
+	listener, err := net.Listen("tcp", cfg.GrpcPort())
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
 
 	log.Printf("starting grpc server on %s", cfg.GrpcPort())
 	if e := s.Serve(listener); e != nil {
