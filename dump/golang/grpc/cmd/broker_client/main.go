@@ -28,7 +28,7 @@ func main() {
 
 	client := pb.NewBrokerClient(conn)
 	publishResponse, err := client.Publish(context.Background(), &pb.PublishRequest{
-		Topic: "topic", Body: []byte("hello"), Ttl: uint64(1000),
+		Topic: "topic", Body: []byte("hello"),
 	})
 	if err != nil {
 		log.Panicf("failed to publish: %v", err)

@@ -5,3 +5,4 @@ This is a book summary of [Kafka: The Definitive Guide](https://www.confluent.io
 ## Table of Contents 
 
 - [Meet Kafka](./meet-kafka/meet-kafka.md)
+- [Installing Kafka](./installing-kafka/installing-kafka.md)

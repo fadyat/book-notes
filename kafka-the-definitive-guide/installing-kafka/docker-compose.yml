@@ -1,0 +1,45 @@
+version: '3.7'
+
+services:
+  zoo:
+    image: bitnami/zookeeper:3.7
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "true"
+      ZOO_PORT_NUMBER: 2181
+      ZOO_SERVER_ID: 1
+      ZOO_TICK_TIME: 2000
+      ZOO_INIT_LIMIT: 20
+      ZOO_SYNC_LIMIT: 5
+      ZOO_SERVERS: zoo:2888:3888
+    volumes:
+      - ./data:/bitnami
+    networks:
+      - kafka-net
+  kafka:
+    image: bitnami/kafka:3.4.1
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    networks:
+      - kafka-net
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zoo:2181
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+    volumes:
+      - ./data:/bitnami
+    depends_on:
+      - zoo
+
+volumes:
+  zoo:
+    driver: local
+  kafka:
+    driver: local
+
+networks:
+  kafka-net:
+    driver: bridge
