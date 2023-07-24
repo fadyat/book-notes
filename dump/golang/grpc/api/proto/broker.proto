@@ -8,7 +8,6 @@ option go_package = "github.com/fadyat/grpc-broker;pb";
 message PublishRequest {
     string topic = 1;
     bytes body = 2;
-    uint64 ttl = 3;
 }
 
 message PublishResponse {

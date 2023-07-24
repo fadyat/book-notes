@@ -109,10 +109,6 @@
         "body": {
           "type": "string",
           "format": "byte"
-        },
-        "ttl": {
-          "type": "string",
-          "format": "uint64"
         }
       }
     },
