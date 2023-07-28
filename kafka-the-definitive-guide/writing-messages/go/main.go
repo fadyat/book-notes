@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
 	"github.com/IBM/sarama"
 	"github.com/riferrei/srclient"
 	"log"
@@ -52,7 +53,8 @@ func withAvroSerializer(config *sarama.Config, addr []string) {
 
 	schemaRegistry := srclient.CreateSchemaRegistryClient(schemaRegistryClientURL)
 	schema, err := schemaRegistry.GetLatestSchema(toSubject(topicName))
-	e, ok := err.(srclient.Error)
+	var e srclient.Error
+	ok := errors.As(err, &e)
 	if !ok || e.Code != subjectNotFound {
 		mayBeDie(err, "Error retrieving schema: ")
 	}
@@ -92,5 +94,7 @@ func main() {
 
 	// Using an Avro encoded message with Schema Registry for
 	// serialization/deserialization of the message payload.
-	withAvroSerializer(config, addr)
+	for i := 0; i < 100; i++ {
+		withAvroSerializer(config, addr)
+	}
 }
