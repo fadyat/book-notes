@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: brand
       text: Books
-      link: /.vitepress/routing/books
+      link: /books
     - theme: alt
       text: Courses
       link: /courses/README.md
