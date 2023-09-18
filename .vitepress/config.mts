@@ -15,4 +15,5 @@ export default defineConfig({
         ]
     },
     ignoreDeadLinks: true,
+    base: '/book-notes/',
 })
