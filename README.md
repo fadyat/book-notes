@@ -1,3 +1,6 @@
+> [!NOTE]
+> Check deployed site at [https://fadyat.github.io/book-notes/](https://fadyat.github.io/book-notes/)
+
 ### Available notes of books:
 
 - [Designing Data-Intensive Applications](./designing-data-intensive-apps/README.md)

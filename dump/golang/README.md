@@ -8,4 +8,4 @@
 - [Scheduler](./scheduler/README.md)
 - [Slices](./slices/README.md)
 
-<img src="gopher.png" width="40%"/>
+<img src="./gopher.png" width="40%"/>

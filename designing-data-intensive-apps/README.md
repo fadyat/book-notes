@@ -12,3 +12,4 @@ book [Designing Data-Intensive Applications](https://dataintensive.net/).
 - [Chapter 5. Replication](replication/replication.md)
 - [Chapter 6. Partitioning](partitioning/partitioning.md)
 - [Chapter 7. Transactions](transactions/transactions.md)
+- [Chapter 8. The Trouble with Distributed Systems](trouble-with-distributed-systems/trouble-with-distributed-systems.md)

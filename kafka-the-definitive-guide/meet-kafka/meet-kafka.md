@@ -207,7 +207,7 @@ The Kafka project inclused a tool called __MirrorMaker__, used for this purpose.
 
 > At its core, MirrorMaker is simply a Kafka consumer and producer, linked together with a queue. Messages are consumed from one Kafka cluster and produced for another.
 
-![](./multiple-dc.png)
+![](./docs/multiple-dc.png)
 
 ### Why Kafka?
 
@@ -232,7 +232,7 @@ Provides the circulatory system for the data ecosystem.
 
 Components can be added and removed as business cases are created and dissolved, and producers do not need to be concerned about who is using the data or the number of consuming applications.
 
-![](./big-data-ecosystem.png)
+![](./docs/big-data-ecosystem.png)
 
 #### Use Cases 
 

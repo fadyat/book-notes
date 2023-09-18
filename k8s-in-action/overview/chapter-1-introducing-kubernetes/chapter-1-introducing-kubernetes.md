@@ -68,7 +68,7 @@ A container, on the other hand, is nothing more than a single isolated process r
 Also with VM you often group up multiple components into a single VM, while
 with containers you can run each component in a separate container. 
 
-![](./vm-vs-container.png)
+![](./vm-vs-containers.png)
 
 3 completely separate OS running and sharing the same hardware resources, which 
 devided by the hypervisor of the host OS. All calls to the kernel are handled 

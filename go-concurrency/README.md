@@ -3,7 +3,7 @@
 This is a book summary of [Concurrency in Go](https://www.oreilly.com/library/view/concurrency-in-go/9781491941294/) by
 Katherine Cox-Buday.
 
-<img src="concurrency-intro/pictures/gophers.png" width="50%"/>
+<img src="./concurrency-intro/pictures/gophers.png" width="50%"/>
 
 ## Table of Contents
 
