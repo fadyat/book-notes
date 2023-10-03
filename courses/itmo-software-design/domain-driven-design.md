@@ -55,12 +55,34 @@ by another value object with the same value type.
 >
 > Again, don't have their own ID, represented in the same table with the entity.
 
-| Property       | Entity          | Value Object    |
-|----------------|-----------------|-----------------|
-| Identity       | Has an identity | Has no identity |
-| Mutability     | Mutable         | Immutable       |
-| Lifespan       | +               | -               |
-| Replaceability | -               | +               |
+| Property       | Entity | Value Object |
+|----------------|--------|--------------|
+| Identity       | +      | -            |
+| Mutability     | +      | -            |
+| Lifespan       | +      | -            |
+| Replaceability | -      | +            |
 
+**Aggregate** - encapsulates a group of entities and value objects that are treated as a unit.
 
+> Every request of changing the state of the entity must go through the aggregate.
+>
+> E.g: shopping cart - consists of items, counter of total price (for performance reasons).
+>
+> Now when we want to add an item to the cart, we need to update the counter of the total price.
+>
+> Aggregate is often called a consistency/transactional boundary, because he groups together
+> multiple entities which require atomic and consistent update.
 
+**Invariant** - a condition that must always be true for the aggregate to be valid.
+
+> If invariant is invalid, our data is inconsistent.
+>
+> To make aggregate valid always we need to use transactions.
+
+**Eventual consistency** - a consistency model used in distributed computing, that guarantees
+that when an update is made to a data store, it will eventually be reflected in all nodes
+that store the data, but does not guarantee that all nodes will be updated at the same time.
+
+> E.g: when we add an item to the cart, we don't need to update the counter of the total price
+> immediately, we can do it by passing value to the event bus and then asynchronously update
+> the counter.
