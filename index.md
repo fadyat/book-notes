@@ -23,6 +23,9 @@ features:
     details: "Notes from the book Designing Data-Intensive Applications"
   - title: "Concurrency in Go"
     link: /go-concurrency/README.md
-    details: "Notes from the book Concurrency in Go"
+    details: "Cookbook for writing concurrent and parallel programs in Go"
+  - title: "Kubernetes in Action"
+    link: /k8s-in-action/README.md
+    details: "How to deploy and manage containerized applications at scale in production using Kubernetes"
 ---
 

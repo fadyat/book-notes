@@ -68,7 +68,7 @@ A container, on the other hand, is nothing more than a single isolated process r
 Also with VM you often group up multiple components into a single VM, while
 with containers you can run each component in a separate container. 
 
-![](./vm-vs-containers.png)
+![](docs/vm-vs-containers.png)
 
 3 completely separate OS running and sharing the same hardware resources, which 
 devided by the hypervisor of the host OS. All calls to the kernel are handled 
@@ -76,7 +76,7 @@ by the hypervisor.
 
 Containers perform all system calls on the exact same kernel running the host OS.
 
-![](./vm-vs-containers-kernel.png)
+![](docs/vm-vs-containers-kernel.png)
 
 The main benefit of virtual machines is the full isolation they provide, because each VM runs its own Linux kernel, while containers all call out to the same kernel, which can clearly pose a security risk. 
 
@@ -151,14 +151,14 @@ Main concepts:
 
 #### Building, distributing, and running a Docker image 
 
-![](./docker-process.png)
+![](docs/docker-process.png)
 
 #### Comparing Virtual Machines and Docker containers 
 
 Apps A and B have access to same binaries and libraries both when running in VM and 
 when running in separate Docker containers. Why?
 
-![](./vm-docker.png)
+![](docs/vm-docker.png)
 
 #### Understanding image layers
 
@@ -214,7 +214,7 @@ Kubernetes enables you to run your software applications on thousands of compute
 
 When the developer sub- mits a list of apps to the master, Kubernetes deploys them to the cluster of worker nodes. What node a component lands on doesn’t (and shouldn’t) matter—neither to the developer nor to the system administrator.
 
-![](./k8s-nodes.png)
+![](docs/k8s-nodes.png)
 
 The developer can specify that certain apps must run together and Kubernetes will deploy them on the same worker node. Others will be spread around the cluster, but they can talk to each other in the same way, regardless of where they’re deployed.
 
@@ -239,7 +239,7 @@ At the hardware level k8s cluster is composed of many nodes, which can split int
 - worker nodes 
 > runs the actual applications 
 
-![](./k8s-architecture.png)
+![](docs/k8s-architecture.png)
 
 #### The control plane 
 
@@ -288,7 +288,7 @@ starts the instructs the Container runtime to pull the required image and start
 the container -> Kube-proxy on each node configures the network to allow the 
 containers to communicate with each other and with the outside world.
 
-![](./k8s-running.png)
+![](docs/k8s-running.png)
 
 #### Keeping the containers running 
 
