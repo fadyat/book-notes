@@ -443,9 +443,6 @@ Exposing the RC as a service:
 kubectl expose rc kubia --type=LoadBalancer --name kubia-http-v2
 ```
 
-```shell
-```
-
 #### Increasing the desired replica count
 
 ```shell
