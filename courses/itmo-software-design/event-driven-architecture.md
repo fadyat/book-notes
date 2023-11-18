@@ -10,7 +10,9 @@ The application state is derived by replaying the events in the log.
 
 Common example of event sourcing is a Git.
 
-**Event** - is a record of something that has happened in the domain.
+**Event** - is a record of what happened in the domain, carries information
+about the state of the domain at the time of their occurrence.
+
 > Event is a subset of the message.
 >
 > - Event don't have a destination.
@@ -36,6 +38,14 @@ Common example of event sourcing is a Git.
 for a data store.
 
 > Different services can handle read and write operations separately.
+
+**Command** - is an operation that changes the state of a system, checks its arguments, and enforces invariants.
+> imperative, e.g: create order, update order, delete order.
+> 
+> `command -> change aggregate state -> event`
+
+**Query** - is a search/read operation that returns data from the system.
+> e.g: get order, get all orders.
 
 ### Resources
 
