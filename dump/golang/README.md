@@ -7,5 +7,6 @@
 - [Map](./map/README.md)
 - [Scheduler](./scheduler/README.md)
 - [Slices](./slices/README.md)
+- [Assembly](./assembly/README.md)
 
 <img src="./gopher.png" width="40%"/>
