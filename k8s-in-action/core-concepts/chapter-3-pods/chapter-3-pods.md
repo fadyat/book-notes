@@ -71,4 +71,13 @@ Forwarding + connecting: `kubectl port-forward` + `curl`
 
 ## 3.3 Organizing pods with labels
 
+As the number of pods increases, the need for categorizing them 
+into subsets becomes more and more evident.
+
+Organizing pods and all other Kubernetes objects is done through labels.
+
+A label is an arbitrary key-value pair you attach to a resource, which is then utilized when selecting resources using label selectors
+(resources are filtered based on whether they include the label specified in the selector)
+A resource can have more than one label, as long as the keys of those labels are unique within that resource.
+
 
