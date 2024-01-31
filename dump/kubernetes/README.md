@@ -6,5 +6,5 @@ Some notes on Kubernetes.
 - [Container Storage Interface (CSI)](./csi.md)
 - [Custom Resource Definition (CRD)](./crd.md)
 - [Assigning Pods (Affinity and Anti-Affinity)](./affinity.md)
-
+- [Pod Disruption Budget (PDB)](./pdb.md)
 
