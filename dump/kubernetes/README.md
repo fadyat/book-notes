@@ -5,3 +5,6 @@ Some notes on Kubernetes.
 - [Volumes](./volumes.md)
 - [Container Storage Interface (CSI)](./csi.md)
 - [Custom Resource Definition (CRD)](./crd.md)
+- [Assigning Pods (Affinity and Anti-Affinity)](./affinity.md)
+
+
