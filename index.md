@@ -19,13 +19,13 @@ hero:
 
 features:
   - title: "Designing Data-Intensive Applications"
-    link: /designing-data-intensive-apps/README.md
+    link: /books/designing-data-intensive-apps/README.md
     details: "Notes from the book Designing Data-Intensive Applications"
   - title: "Concurrency in Go"
-    link: /go-concurrency/README.md
+    link: /books/go-concurrency/README.md
     details: "Cookbook for writing concurrent and parallel programs in Go"
   - title: "Kubernetes in Action"
-    link: /k8s-in-action/README.md
+    link: /books/k8s-in-action/README.md
     details: "How to deploy and manage containerized applications at scale in production using Kubernetes"
 ---
 
